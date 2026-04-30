@@ -1,15 +1,9 @@
-import dotenv from 'dotenv';
-import { fileURLToPath } from 'url';
-import { dirname, join } from 'path';
 import express from 'express';
 import cors from 'cors';
 import tachesRouter from './routes/taches.js';
 import facturesRouter from './routes/factures.js';
 import planningRouter from './routes/planning.js';
 import assistantRouter from './routes/assistant.js';
-
-const __dirname = dirname(fileURLToPath(import.meta.url));
-dotenv.config({ path: join(__dirname, '../.env') });
 
 const app = express();
 const PORT = process.env.PORT || 3000;
