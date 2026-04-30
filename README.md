@@ -24,7 +24,7 @@
 L'IA peut analyser des documents sensibles (factures, contrats, feuilles de temps) et assister l'employeur dans ses tâches quotidiennes, sans risque de fuite de données.
 
 
-[rapport_stage1 (1).docx](https://github.com/user-attachments/files/27239926/rapport_stage1.1.docx)
+[rapport_stage1.docx](https://github.com/user-attachments/files/27239926/rapport_stage1.1.docx)
 
 [rapport_stage2.docx](https://github.com/user-attachments/files/27239939/rapport_stage2.docx)
 
