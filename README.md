@@ -161,9 +161,9 @@ Une plateforme centralisée permettant de :
 
 | Couche | Technologie | Rôle |
 |--------|-------------|------|
-| Backend | Node.js · Express | API REST, logique métier |
-| Frontend | React · HTML · CSS | Interface utilisateur |
-| Base de données | SQLite / PostgreSQL | Stockage local des données |
+| Backend | Node.js v22+ · Express | API REST, logique métier |
+| Frontend | React 18 · Vite · React Router | Interface utilisateur |
+| Base de données | SQLite (`node:sqlite` intégré) | Stockage local des données, zéro dépendance native |
 | IA locale | Ollama (Mistral 7B) | Traitement langage, analyse docs |
 | Réseau | Intranet uniquement | Zéro flux externe — RGPD natif |
 
@@ -174,21 +174,33 @@ Une plateforme centralisée permettant de :
 ```
 lexora/
 ├── backend/
-│   ├── main.py              # Point d'entrée (ou index.js selon stack finale)
-│   ├── routes/              # factures.js, taches.js, assistant.js
-│   ├── services/            # Logique métier + appels Ollama
-│   └── models/              # Schémas base de données
+│   ├── index.js             # Point d'entrée Express (port 3000)
+│   ├── package.json
+│   ├── routes/
+│   │   ├── taches.js        # CRUD tâches
+│   │   ├── factures.js      # CRUD factures
+│   │   ├── planning.js      # CRUD planning
+│   │   └── assistant.js     # Chat IA via Ollama
+│   ├── services/
+│   │   └── ollamaService.js # Wrapper fetch → Ollama
+│   └── models/
+│       └── db.js            # Init SQLite (node:sqlite natif)
 ├── frontend/
-│   ├── src/
-│   │   ├── App.jsx          # Router principal
-│   │   └── pages/           # Dashboard, Factures, Planning, Assistant
-│   └── public/
-├── ollama/
-│   ├── client.py            # Wrapper API Ollama local
-│   └── prompts/             # facture.txt, rh.txt, temps.txt
+│   ├── index.html
+│   ├── vite.config.js       # Proxy /api → localhost:3000
+│   ├── package.json
+│   └── src/
+│       ├── main.jsx
+│       ├── App.jsx           # Router + navigation
+│       ├── index.css
+│       └── pages/
+│           ├── Dashboard.jsx
+│           ├── Taches.jsx
+│           ├── Factures.jsx
+│           ├── Planning.jsx
+│           └── Assistant.jsx
 ├── .env                     # Variables d'environnement
-├── requirements.txt         # Dépendances Python
-└── README.md
+└── .gitignore
 ```
 
 ---
@@ -197,36 +209,37 @@ lexora/
 
 ### Prérequis
 
+- Node.js **v22+** (le module `node:sqlite` est intégré à partir de v22)
 - [Ollama](https://ollama.com) installé sur la machine locale
-- Node.js v18+ (backend)
-- Python 3.10+ (scripts IA)
-- npm ou yarn
+- npm
 
 ### Installation
 
 ```bash
 # Cloner le projet
-git clone https://github.com/votre-repo/lexora.git
-cd lexora
+git clone https://github.com/poloelo/holberton-portfolio-projet.git
+cd holberton-portfolio-projet/lexora
 
-# Lancer le modèle IA
+# 1. Lancer le modèle IA (dans un terminal dédié)
 ollama pull mistral
 ollama serve
 
-# Backend
+# 2. Backend — Terminal 1
 cd backend
 npm install
 npm run dev
+# → API disponible sur http://localhost:3000
 
-# Frontend
+# 3. Frontend — Terminal 2
 cd ../frontend
 npm install
 npm run dev
+# → Interface disponible sur http://localhost:5173
 ```
 
 ### Variables d'environnement
 
-Créer un fichier `.env` à la racine :
+Le fichier `.env` est déjà présent à la racine `lexora/` :
 
 ```env
 OLLAMA_URL=http://localhost:11434
@@ -234,18 +247,30 @@ DB_PATH=./lexora.db
 PORT=3000
 ```
 
+### Endpoints API
+
+| Méthode | Route | Description |
+|---------|-------|-------------|
+| GET | `/api/health` | Santé du serveur |
+| GET/POST/PUT/DELETE | `/api/taches` | Gestion des tâches |
+| GET/POST/PUT/DELETE | `/api/factures` | Gestion des factures |
+| GET/POST/PUT/DELETE | `/api/planning` | Gestion du planning |
+| POST | `/api/assistant` | Chat avec l'IA Ollama |
+
 ---
 
-## Conclusion — Étape 1
+## Conclusion — Étape 2
 
-À la fin de cette première étape, l'équipe a :
+À la fin de cette deuxième étape, l'équipe a :
 
 - ✅ Défini clairement les rôles (Paul & Fatou)
 - ✅ Exploré plusieurs idées de projet
 - ✅ Sélectionné un MVP cohérent et réaliste
 - ✅ Intégré l'angle IA locale (Ollama) pour la conformité RGPD
-- ✅ Mis en place une base solide pour la suite du développement
+- ✅ Mis en place le backend Express avec API REST complète
+- ✅ Mis en place le frontend React avec navigation et pages fonctionnelles
+- ✅ Intégré SQLite via le module natif `node:sqlite` (Node 22+, zéro compilation)
 
 ---
 
-*Rapport Étape 1 · Paul Giorira & Fatou Ndeye · Holberton School · Avril 2026*
+*Rapport Étape 2 · Paul Gioria & Fatou Ndeye · Holberton School · Avril 2026*
