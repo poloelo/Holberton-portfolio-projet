@@ -1,8 +1,8 @@
-import Database from 'better-sqlite3';
+import { DatabaseSync } from 'node:sqlite';
 import path from 'path';
 
 const dbPath = process.env.DB_PATH || './lexora.db';
-const db = new Database(path.resolve(dbPath));
+const db = new DatabaseSync(path.resolve(dbPath));
 
 db.exec(`
   CREATE TABLE IF NOT EXISTS taches (
