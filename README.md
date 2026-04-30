@@ -1,7 +1,7 @@
 # Lexora — Application web de gestion d'entreprise
 
 > **Rapport de stage · Étape 1 — Documentation du projet**  
-> Pol Giorira & Fatou Ndeye · Holberton School · Avril 2026
+> Paul Gioria & Fatou Ndeye · Holberton School · Avril 2026
 
 ---
 
@@ -33,12 +33,12 @@ L'équipe est composée de deux membres travaillant en collaboration pour concev
 
 | Membre | Rôle | Technologies |
 |--------|------|--------------|
-| **Pol Giorira** | Développeur Backend | Node.js · Express |
+| **Paul Gioria** | Développeur Backend | Node.js · Express |
 | **Fatou Ndeye** | Développeuse Frontend / UI-UX | React · HTML · CSS |
 
 ### Répartition des responsabilités
 
-**Pol — Backend**
+**Paul — Backend**
 - Développement de l'API
 - Gestion de la base de données
 - Logique métier
@@ -235,7 +235,7 @@ PORT=3000
 
 À la fin de cette première étape, l'équipe a :
 
-- ✅ Défini clairement les rôles (Pol & Fatou)
+- ✅ Défini clairement les rôles (Paul & Fatou)
 - ✅ Exploré plusieurs idées de projet
 - ✅ Sélectionné un MVP cohérent et réaliste
 - ✅ Intégré l'angle IA locale (Ollama) pour la conformité RGPD
@@ -243,4 +243,4 @@ PORT=3000
 
 ---
 
-*Rapport Étape 1 · Pol Giorira & Fatou Ndeye · Holberton School · Avril 2026*
+*Rapport Étape 1 · Paul Giorira & Fatou Ndeye · Holberton School · Avril 2026*
