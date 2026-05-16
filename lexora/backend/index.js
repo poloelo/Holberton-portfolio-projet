@@ -7,6 +7,10 @@ import tachesRouter from './routes/taches.js';
 import facturesRouter from './routes/factures.js';
 import planningRouter from './routes/planning.js';
 import assistantRouter from './routes/assistant.js';
+import todosRouter from './routes/todos.js';
+import clientsRouter from './routes/clients.js';
+import employesRouter from './routes/employes.js';
+
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 dotenv.config({ path: join(__dirname, '../.env') });
@@ -25,6 +29,9 @@ app.use('/api/taches', tachesRouter);
 app.use('/api/factures', facturesRouter);
 app.use('/api/planning', planningRouter);
 app.use('/api/assistant', assistantRouter);
+app.use('/api/todos', todosRouter);
+app.use('/api/clients', clientsRouter);
+app.use('/api/employes', employesRouter);
 
 app.listen(PORT, () => {
   console.log(`Lexora backend running on port ${PORT}`);
