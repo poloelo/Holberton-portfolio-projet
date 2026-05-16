@@ -31,6 +31,15 @@ db.exec(`
     heure_fin TEXT NOT NULL,
     projet TEXT
   );
+  CREATE TABLE IF NOT EXISTS todos (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    titre TEXT NOT NULL,
+    description TEXT,
+    date TEXT,
+    priorite TEXT DEFAULT 'normale',
+    statut TEXT DEFAULT 'à faire',
+    created_at TEXT DEFAULT (datetime('now'))
+  );
 `);
 
 export default db;
