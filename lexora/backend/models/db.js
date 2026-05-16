@@ -66,6 +66,16 @@ db.exec(`
     role TEXT DEFAULT 'employe',
     created_at TEXT DEFAULT (datetime('now'))
   );
+  CREATE TABLE IF NOT EXISTS automations (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    nom TEXT NOT NULL,
+    description TEXT,
+    type TEXT,
+    frequence TEXT,
+    action TEXT NOT NULL,
+    actif INTEGER DEFAULT 1,
+    created_at TEXT DEFAULT (datetime('now'))
+  );
 `);
 
 export default db;

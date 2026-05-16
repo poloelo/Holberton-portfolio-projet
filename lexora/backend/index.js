@@ -10,6 +10,7 @@ import assistantRouter from './routes/assistant.js';
 import todosRouter from './routes/todos.js';
 import clientsRouter from './routes/clients.js';
 import employesRouter from './routes/employes.js';
+import automationsRouter from './routes/automations.js';
 
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -32,6 +33,7 @@ app.use('/api/assistant', assistantRouter);
 app.use('/api/todos', todosRouter);
 app.use('/api/clients', clientsRouter);
 app.use('/api/employes', employesRouter);
+app.use('/api/automations', automationsRouter);
 
 app.listen(PORT, () => {
   console.log(`Lexora backend running on port ${PORT}`);
