@@ -31,6 +31,42 @@ db.exec(`
     heure_fin TEXT NOT NULL,
     projet TEXT
   );
+  CREATE TABLE IF NOT EXISTS todos (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    titre TEXT NOT NULL,
+    description TEXT,
+    date TEXT,
+    priorite TEXT DEFAULT 'normale',
+    statut TEXT DEFAULT 'à faire',
+    created_at TEXT DEFAULT (datetime('now'))
+  );
+  CREATE TABLE IF NOT EXISTS clients (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    type_client TEXT DEFAULT 'particulier',
+    email TEXT NOT NULL,
+    telephone TEXT,
+    adresse TEXT,
+    nom TEXT,
+    prenom TEXT,
+    raison_sociale TEXT,
+    siret TEXT,
+    tva TEXT,
+    contact_nom TEXT,
+    created_at TEXT DEFAULT (datetime('now'))
+  );
+  CREATE TABLE IF NOT EXISTS employes (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    nom TEXT NOT NULL,
+    prenom TEXT,
+    email TEXT NOT NULL,
+    poste TEXT,
+    departement TEXT,
+    salaire REAL,
+    date_embauche TEXT,
+    role TEXT DEFAULT 'employe',
+    created_at TEXT DEFAULT (datetime('now'))
+  );
 `);
 
 export default db;
+
