@@ -40,6 +40,21 @@ db.exec(`
     statut TEXT DEFAULT 'à faire',
     created_at TEXT DEFAULT (datetime('now'))
   );
+  CREATE TABLE IF NOT EXISTS clients (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    type_client TEXT DEFAULT 'particulier',
+    email TEXT NOT NULL,
+    telephone TEXT,
+    adresse TEXT,
+    nom TEXT,
+    prenom TEXT,
+    raison_sociale TEXT,
+    siret TEXT,
+    tva TEXT,
+    contact_nom TEXT,
+    created_at TEXT DEFAULT (datetime('now'))
+  );
 `);
 
 export default db;
+
