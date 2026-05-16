@@ -54,6 +54,18 @@ db.exec(`
     contact_nom TEXT,
     created_at TEXT DEFAULT (datetime('now'))
   );
+  CREATE TABLE IF NOT EXISTS employes (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    nom TEXT NOT NULL,
+    prenom TEXT,
+    email TEXT NOT NULL,
+    poste TEXT,
+    departement TEXT,
+    salaire REAL,
+    date_embauche TEXT,
+    role TEXT DEFAULT 'employe',
+    created_at TEXT DEFAULT (datetime('now'))
+  );
 `);
 
 export default db;
