@@ -4,6 +4,10 @@ import Taches from './pages/Taches.jsx';
 import Factures from './pages/Factures.jsx';
 import Planning from './pages/Planning.jsx';
 import Assistant from './pages/Assistant.jsx';
+import Todos from './pages/Todos.jsx';
+import Clients from './pages/Clients.jsx';
+import Employes from './pages/Employes.jsx';
+import Automations from './pages/Automations.jsx';
 
 export default function App() {
   return (
@@ -16,6 +20,10 @@ export default function App() {
           <li><NavLink to="/factures">Factures</NavLink></li>
           <li><NavLink to="/planning">Planning</NavLink></li>
           <li><NavLink to="/assistant">Assistant IA</NavLink></li>
+          <li><NavLink to="/todos">Todos</NavLink></li>
+          <li><NavLink to="/clients">Clients</NavLink></li>
+          <li><NavLink to="/employes">Employes</NavLink></li>
+          <li><NavLink to="/automations">Automations</NavLink></li>
         </ul>
       </nav>
       <main className="content">
@@ -25,6 +33,10 @@ export default function App() {
           <Route path="/factures" element={<Factures />} />
           <Route path="/planning" element={<Planning />} />
           <Route path="/assistant" element={<Assistant />} />
+          <Route path="/todos" element={<Todos />} />
+          <Route path="/clients" element={<Clients />} />
+          <Route path="/employes" element={<Employes />} />
+          <Route path="/automations" element={<Automations />} />
         </Routes>
       </main>
     </div>
