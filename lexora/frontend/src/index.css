@@ -207,3 +207,30 @@ button.danger:hover {
 .chat-input input {
   flex: 1;
 }
+
+/* Styles pour le rendu Markdown */
+.markdown-content table {
+  border-collapse: collapse;
+  width: 100%;
+  margin: 10px 0;
+  background: white;
+}
+
+.markdown-content th, .markdown-content td {
+  border: 1px solid #ccc;
+  padding: 8px 12px;
+  text-align: left;
+}
+
+.markdown-content th {
+  background-color: #f4f4f4;
+}
+
+.markdown-content p {
+  margin: 5px 0;
+}
+
+.markdown-content h3 {
+  margin-top: 15px;
+  color: #2c3e50;
+}
