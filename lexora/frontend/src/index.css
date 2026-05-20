@@ -608,6 +608,55 @@ tbody tr:last-child td {
   color: #333;
 }
 
+/* ── Onglets (composant Tabs) ────────────────────────────── */
+/*
+ * La barre d'onglets est positionnée juste au-dessus du contenu.
+ * L'onglet actif a un fond blanc et une bordure inférieure colorée.
+ */
+.tabs-bar {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 20px;
+  border-bottom: 2px solid #eee;
+  padding-bottom: 0;
+}
+
+.tab-btn {
+  background: transparent;
+  color: #888;
+  border: none;
+  border-bottom: 2px solid transparent;
+  border-radius: 0;
+  padding: 8px 18px;
+  margin-bottom: -2px; /* Aligne avec le border-bottom du parent */
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: color 0.2s, border-color 0.2s;
+  box-shadow: none;
+  transform: none;
+}
+
+.tab-btn:hover {
+  color: #7c6af7;
+  background: transparent;
+  box-shadow: none;
+  transform: none;
+}
+
+.tab-btn.tab-active {
+  color: #7c6af7;
+  border-bottom-color: #7c6af7;
+  font-weight: 600;
+  background: transparent;
+  box-shadow: none;
+}
+
+.tab-panel {
+  /* Animation légère quand on change d'onglet */
+  animation: fadeInUp 0.2s ease-out;
+}
+
 /* ── Page search bar ─────────────────────────────────────── */
 .page-toolbar {
   display: flex;
