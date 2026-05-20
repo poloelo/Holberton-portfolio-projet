@@ -17,21 +17,23 @@
 import { Routes, Route, NavLink } from 'react-router-dom';
 import { ToastProvider } from './contexts/ToastContext.jsx';
 
-// Import des 5 pages
+// Import des 6 pages
 import Dashboard       from './pages/Dashboard.jsx';
 import Taches          from './pages/Taches.jsx';
 import ClientsFactures from './pages/ClientsFactures.jsx';
 import Equipe          from './pages/Equipe.jsx';
+import Calendrier      from './pages/Calendrier.jsx';
 import Assistant       from './pages/Assistant.jsx';
 
 // Configuration de la navigation : chaque entrée = un lien dans la sidebar
 // Ajouter une page ici suffit à la faire apparaître dans le menu
 const NAV_ITEMS = [
-  { to: '/',          label: 'Dashboard',        icon: '▦', end: true },
-  { to: '/taches',    label: 'Tâches',           icon: '✓' },
-  { to: '/business',  label: 'Clients & Factures', icon: '€' },
-  { to: '/equipe',    label: 'Équipe',            icon: '◎' },
-  { to: '/assistant', label: 'Assistant IA',      icon: '◈' },
+  { to: '/',           label: 'Dashboard',          icon: '▦', end: true },
+  { to: '/taches',     label: 'Tâches',             icon: '✓' },
+  { to: '/business',   label: 'Clients & Factures', icon: '€' },
+  { to: '/equipe',     label: 'Équipe',             icon: '◎' },
+  { to: '/calendrier', label: 'Calendrier',         icon: '◫' },
+  { to: '/assistant',  label: 'Assistant IA',       icon: '◈' },
 ];
 
 export default function App() {
@@ -68,11 +70,12 @@ export default function App() {
         {/* ── Zone de contenu principale ── */}
         <main className="content">
           <Routes>
-            <Route path="/"          element={<Dashboard />} />
-            <Route path="/taches"    element={<Taches />} />
-            <Route path="/business"  element={<ClientsFactures />} />
-            <Route path="/equipe"    element={<Equipe />} />
-            <Route path="/assistant" element={<Assistant />} />
+            <Route path="/"           element={<Dashboard />} />
+            <Route path="/taches"     element={<Taches />} />
+            <Route path="/business"   element={<ClientsFactures />} />
+            <Route path="/equipe"     element={<Equipe />} />
+            <Route path="/calendrier" element={<Calendrier />} />
+            <Route path="/assistant"  element={<Assistant />} />
           </Routes>
         </main>
 
