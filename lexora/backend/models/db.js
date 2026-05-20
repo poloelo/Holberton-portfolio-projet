@@ -76,6 +76,18 @@ db.exec(`
     actif INTEGER DEFAULT 1,
     created_at TEXT DEFAULT (datetime('now'))
   );
+
+  CREATE TABLE IF NOT EXISTS evenements (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    titre TEXT NOT NULL,
+    description TEXT,
+    date_debut TEXT NOT NULL,
+    date_fin TEXT,
+    type TEXT DEFAULT 'evenement',
+    couleur TEXT DEFAULT '#7c6af7',
+    created_by TEXT,
+    created_at TEXT DEFAULT (datetime('now'))
+  );
 `);
 
 export default db;
