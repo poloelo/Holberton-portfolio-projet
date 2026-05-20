@@ -1,31 +1,36 @@
-import { useState, useRef, useEffect } from 'react'; // Ajout de useEffect
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-
+import { useState, useEffect, useRef } from 'react';
 
 export default function Assistant() {
+  // Unification des états (doublons supprimés)
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
   const [image, setImage] = useState(null); 
   const [loading, setLoading] = useState(false);
+  
   const fileInputRef = useRef(null); 
   const messagesEndRef = useRef(null);
 
-  // CHARGEMENT DE L'HISTORIQUE DEPUIS LE SERVEUR AU MONTAGE DE LA PAGE
+  // CHARGEMENT UNIQUE DE L'HISTORIQUE DEPUIS LE SERVEUR AU MONTAGE DE LA PAGE
   useEffect(() => {
-    const fetchHistory = async () => {
+    const loadHistory = async () => {
       try {
-        const res = await fetch('http://localhost:3000/api/assistant/history');
-        const historyData = await res.json();
-        setMessages(historyData);
+        const response = await fetch('http://localhost:3000/api/assistant/history');
+        if (response.ok) {
+          const historyFromServer = await response.json();
+          // Le serveur renvoie [{ role: 'user', text: '...' }, { role: 'assistant', text: '...' }]
+          setMessages(historyFromServer);
+        }
       } catch (err) {
-        console.error("Impossible de récupérer l'historique", err);
+        console.error("Erreur lors du chargement de l'historique :", err);
       }
     };
-    fetchHistory();
-  }, []); // [] signifie : s'exécute une seule fois quand on arrive sur la page
 
-  // Auto-scroll vers le bas à chaque nouveau message
+    loadHistory();
+  }, []); // S'exécute uniquement à l'ouverture de la page de l'assistant
+
+  // Auto-scroll vers le bas à chaque nouveau message ou indicateur de chargement
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, loading]);
@@ -42,6 +47,7 @@ export default function Assistant() {
     formData.append('prompt', input);
     if (image) formData.append('image', image);
 
+    // Maintien de l'affichage utilisateur en local
     const userMsg = { 
         role: 'user', 
         text: input || "Analyse de cette image...",
@@ -61,30 +67,29 @@ export default function Assistant() {
       });
       const data = await res.json();
       
-      // --- LOGIQUE MAGIQUE : INTERCEPTION DE L'ACTION ---
+      // --- LOGIQUE D'INTERCEPTION DE L'ACTION (FUNCTION CALLING) ---
       let actionFeedback = "";
       
-      // On vérifie si le serveur demande l'exécution d'une action locale (Function Calling)
       if (data.action) {
         const { functionName, arguments: args } = data.action;
         
         // Est-ce que la fonction existe sur la page actuelle ?
         if (window[functionName]) {
           try {
-            // Exemple : window['lexoraAddEvent']('Rdv', '2026-05-22', ...)
+            // Exécution dynamique de la méthode exposée sur l'objet window
             actionFeedback = window[functionName](...Object.values(args));
           } catch (execErr) {
             actionFeedback = `❌ Échec de l'exécution automatique : ${execErr.message}`;
           }
         } else {
-          actionFeedback = `⚠️ L'action "${functionName}" a été demandée, mais elle n'est pas disponible sur cet écran. Naviguez sur la page concernée.`;
+          actionFeedback = `⚠️ L'action "${functionName}" a été demandée par Lexora, mais elle n'est pas disponible sur cet écran. Navigue sur la page concernée pour l'exécuter.`;
         }
       }
 
-      // On affiche la réponse textuelle de l'IA
+      // Formatage de la réponse finale de l'assistant
       const assistantMsg = { role: 'assistant', text: data.response || 'Pas de réponse' };
       
-      // Si une action a été exécutée, on ajoute un petit badge informatif sous le texte
+      // Injection du retour système graphique dans le flux markdown de la conversation
       if (actionFeedback) {
         assistantMsg.text += `\n\n&nbsp;\n\n> 🤖 **Action système exécutée :** ${actionFeedback}`;
       }
@@ -133,7 +138,7 @@ export default function Assistant() {
 
         {loading && (
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#666', fontStyle: 'italic', fontSize: '0.9rem', margin: '15px 0' }}>
-            <span className="spinner">✨</span> Lexora analyse votre demande...
+            <span style={{ display: 'inline-block', animation: 'spin 1s linear infinite' }}>✨</span> Lexora analyse votre demande...
           </div>
         )}
         <div ref={messagesEndRef} />
