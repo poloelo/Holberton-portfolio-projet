@@ -1,9 +1,9 @@
 import { Routes, Route, NavLink } from 'react-router-dom';
-import Dashboard from './pages/Dashboard.jsx';
-import Taches from './pages/Taches.jsx';
-import Factures from './pages/Factures.jsx';
-import Planning from './pages/Planning.jsx';
-import Assistant from './pages/Assistant.jsx';
+import Dashboard from './pages/Dashboard.jsx';   // Ok (Dashboard.jsx)
+import Taches from './pages/Taches.jsx';         // Ok (Taches.jsx)
+import CoffreFort from './pages/Coffre_fort.jsx'; // Corrigé : Import aligné sur la majuscule et nom plus clair
+import Planning from './pages/Planning.jsx';     // Ok (Planning.jsx)
+import Assistant from './pages/Assistant.jsx';   // Ok (Assistant.jsx)
 
 export default function App() {
   return (
@@ -11,19 +11,25 @@ export default function App() {
       <nav className="sidebar">
         <div className="sidebar-logo">Lexora</div>
         <ul>
-          <li><NavLink to="/" end>Dashboard</NavLink></li>
-          <li><NavLink to="/taches">Taches</NavLink></li>
-          <li><NavLink to="/factures">Factures</NavLink></li>
-          <li><NavLink to="/planning">Planning</NavLink></li>
-          <li><NavLink to="/assistant">Assistant IA</NavLink></li>
+          {/* Les liens de navigation avec des URLs en minuscules (convention standard) */}
+          <li><NavLink to="/" end>📊 Insights & Recs</NavLink></li>
+          <li><NavLink to="/coffre-fort">📁 Docs Personnels</NavLink></li>
+          <li><NavLink to="/planning">📅 Calendrier</NavLink></li>
+          <li><NavLink to="/automatisations">⚙️ Automatisations</NavLink></li>
+          
+          <hr style={{ border: '0.5px solid #444', margin: '15px 0' }} />
+          
+          {/* L'accès à ton IA */}
+          <li><NavLink to="/assistant">🤖 Assistant IA</NavLink></li>
         </ul>
       </nav>
+      
       <main className="content">
         <Routes>
           <Route path="/" element={<Dashboard />} />
-          <Route path="/taches" element={<Taches />} />
-          <Route path="/factures" element={<Factures />} />
+          <Route path="/coffre-fort" element={<CoffreFort />} />
           <Route path="/planning" element={<Planning />} />
+          <Route path="/automatisations" element={<Taches />} />
           <Route path="/assistant" element={<Assistant />} />
         </Routes>
       </main>

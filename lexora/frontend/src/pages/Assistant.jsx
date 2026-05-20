@@ -1,13 +1,19 @@
-import { useState, useRef } from 'react'; // Ajout de useRef
+import { useState, useRef, useEffect } from 'react'; // Ajout de useEffect
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 
 export default function Assistant() {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
-  const [image, setImage] = useState(null); // Pour stocker le fichier
+  const [image, setImage] = useState(null); 
   const [loading, setLoading] = useState(false);
-  const fileInputRef = useRef(null); // Pour vider l'input fichier après envoi
+  const fileInputRef = useRef(null); 
+  const messagesEndRef = useRef(null); // Pour le scroll automatique
+
+  // Auto-scroll vers le bas à chaque nouveau message
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages, loading]);
 
   const handleImageChange = (e) => {
     setImage(e.target.files[0]);
@@ -17,7 +23,6 @@ export default function Assistant() {
     e.preventDefault();
     if ((!input.trim() && !image) || loading) return;
 
-    // Création d'un FormData (indispensable pour envoyer des fichiers)
     const formData = new FormData();
     formData.append('prompt', input);
     if (image) formData.append('image', image);
@@ -35,13 +40,42 @@ export default function Assistant() {
     setLoading(true);
 
     try {
-      // ATTENTION : On enlève le header 'Content-Type' car le navigateur le gère seul avec FormData
       const res = await fetch('http://localhost:3000/api/assistant', { 
         method: 'POST',
         body: formData, 
       });
       const data = await res.json();
-      setMessages(prev => [...prev, { role: 'assistant', text: data.response || 'Pas de réponse' }]);
+      
+      // --- LOGIQUE MAGIQUE : INTERCEPTION DE L'ACTION ---
+      let actionFeedback = "";
+      
+      // On vérifie si le serveur demande l'exécution d'une action locale (Function Calling)
+      if (data.action) {
+        const { functionName, arguments: args } = data.action;
+        
+        // Est-ce que la fonction existe sur la page actuelle ?
+        if (window[functionName]) {
+          try {
+            // Exemple : window['lexoraAddEvent']('Rdv', '2026-05-22', ...)
+            actionFeedback = window[functionName](...Object.values(args));
+          } catch (execErr) {
+            actionFeedback = `❌ Échec de l'exécution automatique : ${execErr.message}`;
+          }
+        } else {
+          actionFeedback = `⚠️ L'action "${functionName}" a été demandée, mais elle n'est pas disponible sur cet écran. Naviguez sur la page concernée.`;
+        }
+      }
+
+      // On affiche la réponse textuelle de l'IA
+      const assistantMsg = { role: 'assistant', text: data.response || 'Pas de réponse' };
+      
+      // Si une action a été exécutée, on ajoute un petit badge informatif sous le texte
+      if (actionFeedback) {
+        assistantMsg.text += `\n\n&nbsp;\n\n> 🤖 **Action système exécutée :** ${actionFeedback}`;
+      }
+
+      setMessages(prev => [...prev, assistantMsg]);
+
     } catch (err) {
       setMessages(prev => [...prev, { role: 'assistant', text: 'Erreur de connexion au serveur.' }]);
     } finally {
@@ -50,26 +84,31 @@ export default function Assistant() {
   };
 
   return (
-    <div style={{ maxWidth: '900px', margin: '20px auto', fontFamily: 'Arial' }}>
-      <h2>Assistant Lexora (Gemma 4 Vision)</h2>
-      <div style={{ border: '1px solid #ddd', padding: '20px', height: '600px', overflowY: 'auto', borderRadius: '10px', background: '#fcfcfc' }}>
+    <div style={{ maxWidth: '900px', margin: '20px auto', fontFamily: 'system-ui, -apple-system, sans-serif', padding: '0 20px' }}>
+      <h2 style={{ fontSize: '1.6rem', fontWeight: '700', marginBottom: '5px' }}>🤖 Assistant Lexora</h2>
+      <p style={{ color: '#666', fontSize: '0.9rem', margin: '0 0 20px 0' }}>Propulsé par Gemma 4 Vision • Connecté à votre espace de travail</p>
+      
+      <div style={{ border: '1px solid #eee', padding: '20px', height: '550px', overflowY: 'auto', borderRadius: '12px', background: '#ffffff', boxShadow: '0 4px 12px rgba(0,0,0,0.02)' }}>
         
         {messages.map((msg, i) => (
           <div key={i} style={{ 
-            margin: '10px 0', 
+            margin: '15px 0', 
             padding: '15px', 
-            borderRadius: '10px',
-            backgroundColor: msg.role === 'user' ? '#e3f2fd' : '#ffffff',
-            border: msg.role === 'user' ? '1px solid #bbdefb' : '1px solid #eee',
+            borderRadius: '12px',
+            backgroundColor: msg.role === 'user' ? '#e3f2fd' : '#f8f9fa',
+            border: msg.role === 'user' ? '1px solid #c2e2ff' : '1px solid #eee',
+            maxWidth: '85%',
+            marginLeft: msg.role === 'user' ? 'auto' : '0',
           }}>
-            <strong>{msg.role === 'user' ? 'Vous :' : 'Lexora :'}</strong>
+            <strong style={{ color: msg.role === 'user' ? '#1565c0' : '#333', fontSize: '0.85rem' }}>
+              {msg.role === 'user' ? '👤 Vous' : '✨ Lexora'}
+            </strong>
             
-            {/* Si le message contient une image, on l'affiche */}
             {msg.imagePreview && (
-                <img src={msg.imagePreview} alt="upload" style={{ display: 'block', maxWidth: '200px', marginTop: '10px', borderRadius: '5px' }} />
+                <img src={msg.imagePreview} alt="upload" style={{ display: 'block', maxWidth: '200px', marginTop: '10px', borderRadius: '8px', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }} />
             )}
 
-            <div className="markdown-content" style={{ marginTop: '10px' }}>
+            <div className="markdown-content" style={{ marginTop: '8px', fontSize: '0.95rem', lineHeight: '1.5', color: '#222' }}>
               <ReactMarkdown remarkPlugins={[remarkGfm]}>
                 {msg.text}
               </ReactMarkdown>
@@ -77,29 +116,37 @@ export default function Assistant() {
           </div>
         ))}
 
-        {loading && <p><em>Lexora analyse les données...</em></p>}
+        {loading && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#666', fontStyle: 'italic', fontSize: '0.9rem', margin: '15px 0' }}>
+            <span className="spinner">✨</span> Lexora analyse votre demande...
+          </div>
+        )}
+        <div ref={messagesEndRef} />
       </div>
 
-      <form onSubmit={sendMessage} style={{ marginTop: '10px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+      {/* --- FORMULAIRE D'INPUT --- */}
+      <form onSubmit={sendMessage} style={{ marginTop: '15px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
         <div style={{ display: 'flex', gap: '10px' }}>
             <input 
-              style={{ flex: 1, padding: '10px' }}
+              style={{ flex: 1, padding: '12px 15px', borderRadius: '8px', border: '1px solid #ccc', fontSize: '0.95rem', outline: 'none' }}
               value={input} 
               onChange={e => setInput(e.target.value)} 
-              placeholder="Posez une question ou décrivez l'image..."
+              placeholder="Ex: Planifie une intervention de maintenance demain à 14h..."
             />
-            <button type="submit" disabled={loading} style={{ padding: '10px 20px', cursor: 'pointer', backgroundColor: '#2196F3', color: 'white', border: 'none', borderRadius: '5px' }}>
+            <button type="submit" disabled={loading} style={{ padding: '12px 24px', cursor: 'pointer', backgroundColor: '#2196f3', color: 'white', border: 'none', borderRadius: '8px', fontWeight: '600', transition: 'background 0.2s' }}>
                 Envoyer
             </button>
         </div>
         
-        <input 
-            type="file" 
-            accept="image/*" 
-            onChange={handleImageChange}
-            ref={fileInputRef}
-            style={{ fontSize: '0.8em' }}
-        />
+        <div style={{ backgroundColor: '#f1f3f5', padding: '8px 12px', borderRadius: '6px', display: 'inline-flex', alignItems: 'center', width: 'fit-content' }}>
+          <input 
+              type="file" 
+              accept="image/*" 
+              onChange={handleImageChange}
+              ref={fileInputRef}
+              style={{ fontSize: '0.82rem', color: '#555' }}
+          />
+        </div>
       </form>
     </div>
   );
