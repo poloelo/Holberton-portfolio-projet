@@ -2,13 +2,28 @@ import { useState, useRef, useEffect } from 'react'; // Ajout de useEffect
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 
+
 export default function Assistant() {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
   const [image, setImage] = useState(null); 
   const [loading, setLoading] = useState(false);
   const fileInputRef = useRef(null); 
-  const messagesEndRef = useRef(null); // Pour le scroll automatique
+  const messagesEndRef = useRef(null);
+
+  // CHARGEMENT DE L'HISTORIQUE DEPUIS LE SERVEUR AU MONTAGE DE LA PAGE
+  useEffect(() => {
+    const fetchHistory = async () => {
+      try {
+        const res = await fetch('http://localhost:3000/api/assistant/history');
+        const historyData = await res.json();
+        setMessages(historyData);
+      } catch (err) {
+        console.error("Impossible de récupérer l'historique", err);
+      }
+    };
+    fetchHistory();
+  }, []); // [] signifie : s'exécute une seule fois quand on arrive sur la page
 
   // Auto-scroll vers le bas à chaque nouveau message
   useEffect(() => {
