@@ -16,16 +16,19 @@ router.post('/', upload.single('image'), async (req, res) => {
 
   try {
     let imageBase64 = null;
-    
-    // Si une image est présente, on la convertit en Base64 pour Ollama
     if (imageFile) {
       imageBase64 = imageFile.buffer.toString('base64');
     }
 
-    // On envoie le prompt et l'image (si elle existe) au service Ollama
-    const response = await chat(prompt, imageBase64);
+    // Le service renvoie désormais { text, action }
+    const result = await chat(prompt, imageBase64);
     
-    res.json({ response });
+    // On renvoie le format attendu par ton composant Assistant.jsx
+    res.json({ 
+      response: result.text, 
+      action: result.action 
+    });
+    
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Erreur Ollama', details: err.message });
