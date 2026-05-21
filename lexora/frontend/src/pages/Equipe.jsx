@@ -14,6 +14,7 @@
 import { useEffect, useState } from 'react';
 import { useToast } from '../contexts/ToastContext.jsx';
 import Tabs from '../components/Tabs.jsx';
+import { TachesProjet, TodosRapides } from './Taches.jsx';
 
 // ── Clé admin (à remplacer par un système d'auth réel) ────
 const ADMIN_KEY = 'LEXORA_ADMIN_SECRET_2024';
@@ -379,11 +380,24 @@ export default function Equipe() {
           Admin
         </span>
       </h1>
-      <p className="page-subtitle">Gestion interne — employés, planning et automations</p>
+      <p className="page-subtitle">Gestion interne — employés, planning, tâches et automations</p>
 
-      <Tabs tabs={['Employés', 'Planning', 'Automations']}>
+      {/*
+        Ordre des onglets : Employés / Planning / Tâches projet / Notes rapides / Automations
+        TachesProjet et TodosRapides sont des exports nommés de Taches.jsx.
+        Les labels peuvent être des JSX (badge admin) grâce à key={index} dans Tabs.jsx.
+      */}
+      <Tabs tabs={[
+        'Employés',
+        'Planning',
+        <span key="tp">Tâches projet <span className="badge badge-cancelled" style={{ fontSize: '0.6rem', verticalAlign: 'middle', marginLeft: 4 }}>Admin</span></span>,
+        'Notes rapides',
+        <span key="auto">Automations <span className="badge badge-cancelled" style={{ fontSize: '0.6rem', verticalAlign: 'middle', marginLeft: 4 }}>Admin</span></span>,
+      ]}>
         <Employes />
         <Planning />
+        <TachesProjet />
+        <TodosRapides />
         <Automations />
       </Tabs>
     </div>

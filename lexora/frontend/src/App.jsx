@@ -11,6 +11,7 @@
  */
 
 import { Routes, Route, NavLink } from 'react-router-dom';
+import { useState } from 'react';
 import { ToastProvider } from './contexts/ToastContext.jsx';
 
 import Dashboard       from './pages/Dashboard.jsx';
@@ -23,12 +24,11 @@ import Equipe          from './pages/Equipe.jsx';
 
 // ── Navigation principale (haut de la sidebar) ────────────
 const NAV_PRINCIPAL = [
-  { to: '/',           label: 'Dashboard',          icon: '▦', end: true },
-  { to: '/taches',     label: 'Tâches',             icon: '✓' },
-  { to: '/business',   label: 'Clients & Factures', icon: '€' },
-  { to: '/calendrier', label: 'Calendrier',         icon: '◫' },
-  { to: '/documents',  label: 'Documents',          icon: '📁' },
-  { to: '/assistant',  label: 'Assistant IA',       icon: '◈' },
+  { to: '/',           label: 'Dashboard',    icon: '▦', end: true },
+  { to: '/taches',     label: 'Tâches',       icon: '✓' },
+  { to: '/calendrier', label: 'Calendrier',   icon: '◫' },
+  { to: '/documents',  label: 'Documents',    icon: '📁' },
+  { to: '/assistant',  label: 'Assistant IA', icon: '◈' },
 ];
 
 // ── Navigation admin (bas de la sidebar, séparée) ─────────
@@ -39,6 +39,15 @@ const NAV_ADMIN = [
 ];
 
 export default function App() {
+  const [isDark, setIsDark] = useState(false);
+
+  const toggleDark = () => {
+    setIsDark(v => {
+      document.documentElement.classList.toggle('dark', !v);
+      return !v;
+    });
+  };
+
   return (
     <ToastProvider>
       <div className="app-layout">
@@ -68,6 +77,15 @@ export default function App() {
           */}
           <div className="sidebar-spacer" />
 
+          {/* Bouton dark mode — ajoute/retire la classe 'dark' sur <html> */}
+          <button
+            className="dark-toggle"
+            onClick={toggleDark}
+            title={isDark ? 'Passer en mode clair' : 'Passer en mode sombre'}
+          >
+            {isDark ? '☀' : '☾'} {isDark ? 'Mode clair' : 'Mode sombre'}
+          </button>
+
           {/* Section admin — séparée en bas */}
           <div className="sidebar-admin-section">
             <span className="sidebar-section-label">Administration</span>
@@ -89,6 +107,7 @@ export default function App() {
           <Routes>
             <Route path="/"           element={<Dashboard />} />
             <Route path="/taches"     element={<Taches />} />
+            {/* /business reste accessible par URL directe mais n'est plus dans la nav */}
             <Route path="/business"   element={<ClientsFactures />} />
             <Route path="/calendrier" element={<Calendrier />} />
             <Route path="/documents"  element={<CoffreFort />} />

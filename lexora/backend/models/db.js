@@ -112,5 +112,23 @@ db.exec(`
   );
 `);
 
+// Seed : dossier "Modèles & Clients" avec deux fichiers modèles.
+// Ce bloc ne s'exécute qu'une fois : la vérification SELECT empêche les doublons.
+const dossierModeles = db
+  .prepare("SELECT id FROM dossiers WHERE nom = 'Modèles & Clients' AND parent_id IS NULL")
+  .get();
+
+if (!dossierModeles) {
+  const { lastInsertRowid: dossierId } = db
+    .prepare("INSERT INTO dossiers (nom, description) VALUES (?, ?)")
+    .run('Modèles & Clients', 'Modèles de documents à télécharger et compléter');
+
+  const insDoc = db.prepare(
+    "INSERT INTO documents (nom, nom_fichier, type, taille, statut, description, dossier_id) VALUES (?, ?, ?, ?, ?, ?, ?)"
+  );
+  insDoc.run('Fiche_Client_Modele.docx', 'Fiche_Client_Modele.docx', 'Word', '—', 'Modèle', 'Fiche de renseignements client à compléter', dossierId);
+  insDoc.run('Facture_Modele.docx',      'Facture_Modele.docx',      'Word', '—', 'Modèle', 'Modèle de facture standard',                  dossierId);
+}
+
 export default db;
 

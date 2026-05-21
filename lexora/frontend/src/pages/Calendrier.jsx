@@ -20,7 +20,7 @@ import 'react-big-calendar/lib/css/react-big-calendar.css';
 import { format, parse, startOfWeek, getDay } from 'date-fns';
 import { fr } from 'date-fns/locale';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useToast } from '../contexts/ToastContext.jsx';
 
 // ── Configuration du localizer en français ────────────────
@@ -62,10 +62,13 @@ const TYPE_COULEURS = {
   planning:  { bg: '#10b981', text: '#fff', label: 'Planning'    },
 };
 
-// ── Valeur vide du formulaire de création ─────────────────
+// ── Valeur vide du formulaire de création d'événement ─────
 const FORM_VIDE = {
   titre: '', description: '', date_debut: '', date_fin: '', type: 'rdv',
 };
+
+// ── Valeur vide du formulaire de création de tâche ────────
+const FORM_TACHE_VIDE = { titre: '', assignee: '', statut: 'todo' };
 
 // ── Helper : convertit une Date JS en valeur datetime-local ──
 // Les <input type="datetime-local"> attendent "YYYY-MM-DDTHH:mm"
@@ -90,13 +93,17 @@ export default function Calendrier() {
   const [events, setEvents]       = useState([]);
   const [loading, setLoading]     = useState(true);
 
-  // Modal de création : null = fermé, true = ouvert
+  // Modal de création d'événement : null = fermé, true = ouvert
   const [showCreate, setShowCreate] = useState(false);
   // Modal de détail : null = fermé, objet événement = ouvert
   const [detail, setDetail]         = useState(null);
+  // Modal de création de tâche depuis une cellule de jour : null = fermé, Date = ouvert
+  const [showTaskCreate, setShowTaskCreate] = useState(null);
 
-  const [form, setForm]     = useState(FORM_VIDE);
-  const [saving, setSaving] = useState(false);
+  const [form, setForm]         = useState(FORM_VIDE);
+  const [taskForm, setTaskForm] = useState(FORM_TACHE_VIDE);
+  const [saving, setSaving]     = useState(false);
+  const [savingTask, setSavingTask] = useState(false);
 
   const toast = useToast();
 
@@ -191,6 +198,47 @@ export default function Calendrier() {
     }
   };
 
+  // ── Création d'une tâche depuis le calendrier ───────────
+  // Appelée par le modal qui s'ouvre depuis le bouton "+ Tâche" sur une cellule.
+  const handleCreateTask = async e => {
+    e.preventDefault();
+    setSavingTask(true);
+    try {
+      await fetch('/api/taches', {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({
+          titre:    taskForm.titre,
+          assignee: taskForm.assignee || null,
+          statut:   taskForm.statut,
+        }),
+      });
+      setShowTaskCreate(null);
+      setTaskForm(FORM_TACHE_VIDE);
+      toast('Tâche créée');
+    } catch {
+      toast('Erreur lors de la création', 'error');
+    } finally {
+      setSavingTask(false);
+    }
+  };
+
+  // ── Cellule de jour avec bouton "+ Tâche" (vue mois) ────
+  // useCallback évite de recréer ce composant à chaque rendu,
+  // ce qui empêche react-big-calendar de re-monter le calendrier.
+  const DateCellWrapper = useCallback(({ children, value }) => (
+    <div className="cal-cell-wrapper">
+      {children}
+      <button
+        type="button"
+        className="cal-add-task-btn"
+        onClick={e => { e.stopPropagation(); setShowTaskCreate(value); }}
+      >
+        + Tâche
+      </button>
+    </div>
+  ), []);
+
   // ── Suppression d'un événement ───────────────────────────
   const handleDelete = async event => {
     // Les événements issus du planning se gèrent dans la page Équipe
@@ -268,6 +316,7 @@ export default function Calendrier() {
             onSelectSlot={handleSelectSlot}
             onSelectEvent={handleSelectEvent}
             eventPropGetter={eventPropGetter}
+            components={{ dateCellWrapper: DateCellWrapper }}
             step={30}               // Pas de 30 minutes en vue semaine/jour
             timeslots={2}           // 2 cases par "step" → graduations toutes les 30min
             scrollToTime={new Date(0, 0, 0, 8, 0)}  // Vue semaine : commence à 8h
@@ -349,6 +398,59 @@ export default function Calendrier() {
               </button>
               <button type="submit" disabled={saving}>
                 {saving ? <><span className="spinner" /> Création...</> : 'Créer'}
+              </button>
+            </div>
+          </form>
+        </Modal>
+      )}
+
+      {/* ── Modal : Créer une tâche depuis le calendrier ── */}
+      {showTaskCreate && (
+        <Modal onClose={() => setShowTaskCreate(null)}>
+          <div className="modal-header">
+            <span className="modal-title">
+              Nouvelle tâche —{' '}
+              {format(showTaskCreate, 'EEEE d MMMM', { locale: fr })}
+            </span>
+            <button className="modal-close" type="button" onClick={() => setShowTaskCreate(null)}>✕</button>
+          </div>
+          <form onSubmit={handleCreateTask}>
+            <div className="modal-body">
+              <div className="form-group">
+                <label>Titre *</label>
+                <input
+                  value={taskForm.titre}
+                  onChange={e => setTaskForm(p => ({ ...p, titre: e.target.value }))}
+                  placeholder="Ex : Préparer la réunion, Appeler le client..."
+                  required
+                />
+              </div>
+              <div className="form-group">
+                <label>Assigné à</label>
+                <input
+                  value={taskForm.assignee}
+                  onChange={e => setTaskForm(p => ({ ...p, assignee: e.target.value }))}
+                  placeholder="Nom de la personne (optionnel)"
+                />
+              </div>
+              <div className="form-group">
+                <label>Statut</label>
+                <select
+                  value={taskForm.statut}
+                  onChange={e => setTaskForm(p => ({ ...p, statut: e.target.value }))}
+                >
+                  <option value="todo">À faire</option>
+                  <option value="in_progress">En cours</option>
+                  <option value="done">Terminé</option>
+                </select>
+              </div>
+            </div>
+            <div className="modal-footer">
+              <button type="button" className="secondary" onClick={() => setShowTaskCreate(null)}>
+                Annuler
+              </button>
+              <button type="submit" disabled={savingTask}>
+                {savingTask ? <><span className="spinner" /> Création...</> : 'Créer la tâche'}
               </button>
             </div>
           </form>

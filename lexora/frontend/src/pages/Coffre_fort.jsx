@@ -26,6 +26,7 @@ const STATUT_STYLE = {
   'Traité':  { bg: '#d1e7dd', color: '#0f5132' },
   'Vérifié': { bg: '#cff4fc', color: '#055160' },
   'En cours':{ bg: '#fff3cd', color: '#856404' },
+  'Modèle':  { bg: '#f3f4f6', color: '#6b7280' },
 };
 
 export default function CoffreFort() {
@@ -45,6 +46,9 @@ export default function CoffreFort() {
   const [folderDesc,     setFolderDesc]     = useState('');
   const [uploading,      setUploading]      = useState(false);
   const [savingFolder,   setSavingFolder]   = useState(false);
+  // Mode recherche globale : affiche tous les fichiers indépendamment du dossier actuel
+  const [globalMode,     setGlobalMode]     = useState(false);
+  const [globalSearch,   setGlobalSearch]   = useState('');
 
   const fileInputRef = useRef(null);
   const toast = useToast();
@@ -71,12 +75,26 @@ export default function CoffreFort() {
   // ── Éléments du dossier actuel ───────────────────────
   // On filtre dossiers et documents selon le dossier ouvert.
   // null == racine → on affiche les éléments sans parent.
+  // En mode normal : éléments du dossier courant seulement
   const dossiersIci = dossiers.filter(d =>
     currentFolderId === null ? d.parent_id === null : d.parent_id === currentFolderId
   );
   const documentsIci = documents.filter(d =>
     currentFolderId === null ? d.dossier_id === null : d.dossier_id === currentFolderId
   );
+
+  // En mode global : tous les éléments filtrés par la recherche textuelle
+  const q = globalSearch.toLowerCase();
+  const dossiersGlobal  = dossiers.filter(d  => !q || d.nom?.toLowerCase().includes(q));
+  const documentsGlobal = documents.filter(d => !q || d.nom?.toLowerCase().includes(q));
+
+  // Les éléments effectivement affichés selon le mode actif
+  const dossiersVus  = globalMode ? dossiersGlobal  : dossiersIci;
+  const documentsVus = globalMode ? documentsGlobal : documentsIci;
+
+  // Retrouve le nom du dossier parent d'un document (utile en mode global)
+  const nomDossier = dossierId =>
+    dossierId ? (dossiers.find(d => d.id === dossierId)?.nom ?? '—') : 'Racine';
 
   // ── Fil d'Ariane ─────────────────────────────────────
   // Remonte l'arborescence depuis currentFolderId jusqu'à la racine
@@ -190,26 +208,37 @@ export default function CoffreFort() {
 
       {/* ── Barre d'outils + Fil d'Ariane ── */}
       <div className="vault-toolbar">
-        {/* Fil d'Ariane : Racine / Dossier A / Dossier B */}
-        <div className="vault-breadcrumbs">
-          <span
-            className={`vault-crumb${currentFolderId === null ? ' vault-crumb-active' : ''}`}
-            onClick={() => setCurrentFolderId(null)}
-          >
-            🏠 Racine
-          </span>
-          {breadcrumbs.map(crumb => (
-            <span key={crumb.id} className="vault-crumb-group">
-              <span className="vault-crumb-sep">/</span>
-              <span
-                className={`vault-crumb${currentFolderId === crumb.id ? ' vault-crumb-active' : ''}`}
-                onClick={() => setCurrentFolderId(crumb.id)}
-              >
-                {crumb.nom}
-              </span>
+        {/* Fil d'Ariane ou barre de recherche globale selon le mode */}
+        {globalMode ? (
+          <input
+            className="search-input"
+            placeholder="Rechercher dans tous les dossiers..."
+            value={globalSearch}
+            onChange={e => setGlobalSearch(e.target.value)}
+            style={{ flex: 1 }}
+            autoFocus
+          />
+        ) : (
+          <div className="vault-breadcrumbs">
+            <span
+              className={`vault-crumb${currentFolderId === null ? ' vault-crumb-active' : ''}`}
+              onClick={() => setCurrentFolderId(null)}
+            >
+              🏠 Racine
             </span>
-          ))}
-        </div>
+            {breadcrumbs.map(crumb => (
+              <span key={crumb.id} className="vault-crumb-group">
+                <span className="vault-crumb-sep">/</span>
+                <span
+                  className={`vault-crumb${currentFolderId === crumb.id ? ' vault-crumb-active' : ''}`}
+                  onClick={() => setCurrentFolderId(crumb.id)}
+                >
+                  {crumb.nom}
+                </span>
+              </span>
+            ))}
+          </div>
+        )}
 
         <div style={{ display: 'flex', gap: 8 }}>
           {/* Bouton upload rapide */}
@@ -232,6 +261,14 @@ export default function CoffreFort() {
             onClick={() => setShowFolderForm(v => !v)}
           >
             📁 {showFolderForm ? 'Annuler' : 'Nouveau dossier'}
+          </button>
+          {/* Toggle recherche globale : affiche tous les fichiers sans se limiter au dossier courant */}
+          <button
+            className={globalMode ? '' : 'secondary'}
+            onClick={() => { setGlobalMode(v => !v); setGlobalSearch(''); }}
+            title={globalMode ? 'Revenir à la navigation par dossier' : 'Rechercher dans tous les dossiers'}
+          >
+            🔍 {globalMode ? 'Quitter la recherche' : 'Recherche globale'}
           </button>
         </div>
       </div>
@@ -282,11 +319,15 @@ export default function CoffreFort() {
             </div>
           ))}
         </div>
-      ) : dossiersIci.length === 0 && documentsIci.length === 0 ? (
+      ) : dossiersVus.length === 0 && documentsVus.length === 0 ? (
         <div className="client-list">
           <div className="empty-state">
             <div className="empty-state-icon">📂</div>
-            <p>Ce dossier est vide — glissez des fichiers ou créez un sous-dossier</p>
+            <p>
+              {globalMode
+                ? 'Aucun résultat pour cette recherche'
+                : 'Ce dossier est vide — glissez des fichiers ou créez un sous-dossier'}
+            </p>
           </div>
         </div>
       ) : (
@@ -295,21 +336,32 @@ export default function CoffreFort() {
             <tr>
               <th>Nom</th>
               <th>Description</th>
+              {/* Colonne "Dossier" uniquement en mode global pour indiquer l'emplacement */}
+              {globalMode && <th>Dossier</th>}
               <th>Détails</th>
               <th>Statut</th>
               <th>Actions</th>
             </tr>
           </thead>
           <tbody>
-            {/* Dossiers en premier */}
-            {dossiersIci.map(d => (
-              <tr key={`d-${d.id}`} className="vault-row-folder" onClick={() => setCurrentFolderId(d.id)}>
+            {/* Dossiers en premier (en mode global, cliquer navigue vers ce dossier) */}
+            {dossiersVus.map(d => (
+              <tr
+                key={`d-${d.id}`}
+                className="vault-row-folder"
+                onClick={() => { setCurrentFolderId(d.id); setGlobalMode(false); }}
+              >
                 <td style={{ fontWeight: 600, cursor: 'pointer' }}>
                   <span style={{ marginRight: 8 }}>📁</span>{d.nom}
                 </td>
                 <td style={{ color: '#888', fontSize: '0.85rem' }}>
                   {d.description || <span style={{ color: '#ccc' }}>—</span>}
                 </td>
+                {globalMode && (
+                  <td style={{ color: '#aaa', fontSize: '0.82rem' }}>
+                    {nomDossier(d.parent_id)}
+                  </td>
+                )}
                 <td style={{ color: '#aaa', fontSize: '0.82rem' }}>Dossier</td>
                 <td>
                   <span className="badge badge-in-progress">Dossier</span>
@@ -323,7 +375,7 @@ export default function CoffreFort() {
             ))}
 
             {/* Documents ensuite */}
-            {documentsIci.map(doc => {
+            {documentsVus.map(doc => {
               const statutStyle = STATUT_STYLE[doc.statut] ?? STATUT_STYLE['En cours'];
               return (
                 <tr key={`doc-${doc.id}`}>
@@ -336,6 +388,12 @@ export default function CoffreFort() {
                   <td style={{ color: '#888', fontSize: '0.85rem' }}>
                     {doc.description || <span style={{ color: '#ccc' }}>—</span>}
                   </td>
+                  {/* En mode global, affiche le dossier parent du document */}
+                  {globalMode && (
+                    <td style={{ color: '#aaa', fontSize: '0.82rem' }}>
+                      {nomDossier(doc.dossier_id)}
+                    </td>
+                  )}
                   <td style={{ color: '#aaa', fontSize: '0.82rem' }}>
                     {doc.taille}
                     {doc.created_at && (

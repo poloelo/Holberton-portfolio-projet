@@ -35,7 +35,7 @@ export default function Tabs({ tabs, children }) {
       <div className="tabs-bar">
         {tabs.map((label, index) => (
           <button
-            key={label}
+            key={index}
             // On applique la classe "tab-active" uniquement sur l'onglet sélectionné
             className={`tab-btn${index === activeTab ? ' tab-active' : ''}`}
             onClick={() => setActiveTab(index)}

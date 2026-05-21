@@ -10,6 +10,7 @@
  */
 
 import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { useToast } from '../contexts/ToastContext.jsx';
 import Tabs from '../components/Tabs.jsx';
 
@@ -29,7 +30,8 @@ function StatusBadge({ statut }) {
 }
 
 // ── Sous-composant : liste des tâches projet ───────────────
-function TachesProjet() {
+// export nommé — importé dans Equipe.jsx
+export function TachesProjet() {
   const [taches, setTaches]   = useState([]);
   const [form, setForm]       = useState(FORM_VIDE);
   const [loading, setLoading] = useState(true);
@@ -157,7 +159,8 @@ function TachesProjet() {
 }
 
 // ── Sous-composant : todos rapides ─────────────────────────
-function TodosRapides() {
+// export nommé — importé dans Equipe.jsx
+export function TodosRapides() {
   const [todos, setTodos]     = useState([]);
   const [titre, setTitre]     = useState('');
   const [loading, setLoading] = useState(true);
@@ -246,22 +249,20 @@ function TodosRapides() {
   );
 }
 
-// ── Page principale exportée ───────────────────────────────
+// ── Page de redirection ────────────────────────────────────
+// Les tâches ont été déplacées dans la page Équipe pour centraliser
+// la gestion interne en un seul endroit.
 export default function Taches() {
   return (
     <div className="page-enter">
       <h1>Tâches</h1>
-      <p className="page-subtitle">Gestion des tâches projet et notes rapides</p>
-
-      {/*
-        Le composant Tabs reçoit :
-        - tabs : les labels des onglets
-        - children : les composants à afficher pour chaque onglet (dans le même ordre)
-      */}
-      <Tabs tabs={['Tâches projet', 'Notes rapides']}>
-        <TachesProjet />
-        <TodosRapides />
-      </Tabs>
+      <p className="page-subtitle">
+        Les tâches projet et les notes rapides ont été intégrées à la section{' '}
+        <Link to="/equipe" style={{ color: '#7c6af7', fontWeight: 600 }}>
+          Équipe
+        </Link>{' '}
+        pour centraliser la gestion interne.
+      </p>
     </div>
   );
 }
