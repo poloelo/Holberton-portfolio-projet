@@ -76,6 +76,40 @@ db.exec(`
     actif INTEGER DEFAULT 1,
     created_at TEXT DEFAULT (datetime('now'))
   );
+
+  CREATE TABLE IF NOT EXISTS evenements (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    titre TEXT NOT NULL,
+    description TEXT,
+    date_debut TEXT NOT NULL,
+    date_fin TEXT,
+    type TEXT DEFAULT 'evenement',
+    couleur TEXT DEFAULT '#7c6af7',
+    created_by TEXT,
+    created_at TEXT DEFAULT (datetime('now'))
+  );
+
+  -- Dossiers du coffre-fort (arborescence par parent_id)
+  CREATE TABLE IF NOT EXISTS dossiers (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    nom TEXT NOT NULL,
+    description TEXT,
+    parent_id INTEGER,
+    created_at TEXT DEFAULT (datetime('now'))
+  );
+
+  -- Documents/fichiers stockés dans le coffre-fort
+  CREATE TABLE IF NOT EXISTS documents (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    nom TEXT NOT NULL,
+    nom_fichier TEXT NOT NULL,
+    type TEXT,
+    taille TEXT,
+    statut TEXT DEFAULT 'En cours',
+    description TEXT,
+    dossier_id INTEGER,
+    created_at TEXT DEFAULT (datetime('now'))
+  );
 `);
 
 export default db;
