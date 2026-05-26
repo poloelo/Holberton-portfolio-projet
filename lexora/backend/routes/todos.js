@@ -31,16 +31,23 @@ router.post('/', (req, res) => {
 });
 
 // PUT — Modifier un todo
+// BUG CORRIGÉ : la vérification d'existence doit précéder l'UPDATE.
+// Faire l'UPDATE en premier puis vérifier si le todo existe retourne
+// un 404 après avoir inutilement tenté une mise à jour sur rien.
 router.put('/:id', (req, res) => {
   try {
+    // 1. Vérifier que le todo existe avant de tenter la mise à jour
+    const existing = db.prepare('SELECT * FROM todos WHERE id = ?').get(req.params.id);
+    if (!existing) return res.status(404).json({ error: 'Todo non trouvé' });
+
     const { titre, description, date, priorite, statut } = req.body;
-    const stmt = db.prepare(`
+    db.prepare(`
       UPDATE todos SET titre = ?, description = ?, date = ?, priorite = ?, statut = ?
       WHERE id = ?
-    `);
-    stmt.run(titre, description, date, priorite, statut, req.params.id);
+    `).run(titre, description, date, priorite, statut, req.params.id);
+
+    // 2. Retourner l'entrée mise à jour
     const todo = db.prepare('SELECT * FROM todos WHERE id = ?').get(req.params.id);
-    if (!todo) return res.status(404).json({ error: 'Todo non trouvé' });
     res.json(todo);
   } catch (err) {
     res.status(500).json({ error: 'Erreur serveur' });
