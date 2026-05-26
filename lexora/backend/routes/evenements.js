@@ -13,7 +13,9 @@ import db from '../models/db.js';
 
 const router = Router();
 
-// GET — Tous les événements, triés du plus récent au plus ancien
+// GET — Tous les événements, triés par date de début croissante (le plus tôt en premier).
+// On utilise ASC pour le calendrier : il est naturel d'afficher les événements
+// du passé vers le futur, comme dans un agenda.
 router.get('/', (req, res) => {
   try {
     const events = db.prepare(
