@@ -85,8 +85,11 @@ export default function Dashboard() {
   const facturesImpayees = factures.filter(f => f.statut === 'en attente').length;
   const totalFactures    = factures.reduce((s, f) => s + (f.montant || 0), 0);
 
-  const recentTaches   = [...taches].reverse().slice(0, 5);
-  const recentFactures = [...factures].reverse().slice(0, 5);
+  // L'API retourne déjà les éléments triés du plus récent au plus ancien
+  // (ORDER BY created_at DESC / ORDER BY id DESC).
+  // On prend simplement les 5 premiers — pas besoin de reverse().
+  const recentTaches   = taches.slice(0, 5);
+  const recentFactures = factures.slice(0, 5);
 
   const today = new Date().toLocaleDateString('fr-FR', {
     weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
