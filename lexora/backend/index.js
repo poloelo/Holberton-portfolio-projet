@@ -29,6 +29,7 @@ import employesRouter    from './routes/employes.js';
 import automationsRouter from './routes/automations.js';
 import evenementsRouter  from './routes/evenements.js';
 import documentsRouter   from './routes/documents.js';
+import authRouter        from './routes/auth.js';
 
 // ── Configuration ─────────────────────────────────────────────
 // __dirname n'existe pas en ES modules (type: "module"), on le recrée.
@@ -59,6 +60,7 @@ app.get('/api/health', (req, res) => {
 
 // ── Montage des routes ────────────────────────────────────────
 // Chaque préfixe correspond à un module métier indépendant.
+app.use('/api/auth',        authRouter);
 app.use('/api/taches',      tachesRouter);
 app.use('/api/factures',    facturesRouter);
 app.use('/api/planning',    planningRouter);
