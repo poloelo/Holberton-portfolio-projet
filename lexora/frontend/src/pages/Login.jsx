@@ -3,10 +3,10 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext.jsx';
 
 export default function Login() {
-  const { login } = useAuth();
+  const { login }  = useAuth();
   const navigate   = useNavigate();
-  const [form, setForm]   = useState({ email: '', password: '' });
-  const [error, setError] = useState('');
+  const [form, setForm]     = useState({ email: '', password: '' });
+  const [error, setError]   = useState('');
   const [loading, setLoading] = useState(false);
 
   const handleChange = e => setForm(prev => ({ ...prev, [e.target.name]: e.target.value }));
@@ -16,8 +16,9 @@ export default function Login() {
     setError('');
     setLoading(true);
     try {
-      await login(form.email, form.password);
-      navigate('/equipe');
+      const user = await login(form.email, form.password);
+      // Redirection selon le rôle
+      navigate(user.role === 'admin' ? '/equipe' : '/mon-espace', { replace: true });
     } catch (err) {
       setError(err.message);
     } finally {
@@ -32,8 +33,10 @@ export default function Login() {
           <span className="sidebar-logo-icon">L</span>
           Lexora
         </div>
-        <h2 style={{ marginBottom: '0.25rem' }}>Espace Administration</h2>
-        <p className="page-subtitle" style={{ marginBottom: '1.5rem' }}>Connectez-vous pour accéder à la gestion d'équipe</p>
+        <h2 style={{ marginBottom: '0.25rem' }}>Connexion</h2>
+        <p className="page-subtitle" style={{ marginBottom: '1.5rem' }}>
+          Entrez vos identifiants pour accéder à votre espace
+        </p>
 
         <form onSubmit={handleSubmit}>
           <input
