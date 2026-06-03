@@ -15,6 +15,7 @@
 
 import Database from 'better-sqlite3';
 import path from 'path';
+import bcrypt from 'bcryptjs';
 
 // Résolution du chemin absolu pour éviter les problèmes selon le répertoire courant
 const dbPath = process.env.DB_PATH || './lexora.db';
@@ -104,6 +105,7 @@ db.exec(`
     salaire       REAL,
     date_embauche TEXT,             -- Format : "YYYY-MM-DD"
     role          TEXT DEFAULT 'employe',
+    password_hash TEXT,                -- NULL = compte sans mot de passe (legacy)
     created_at    TEXT DEFAULT (datetime('now'))
   );
 
@@ -167,5 +169,22 @@ db.exec(`
     created_at  TEXT DEFAULT (datetime('now'))
   );
 `);
+
+// Migration : ajouter password_hash si la colonne n'existe pas encore (base existante)
+const cols = db.prepare("PRAGMA table_info(employes)").all().map(c => c.name);
+if (!cols.includes('password_hash')) {
+  db.exec("ALTER TABLE employes ADD COLUMN password_hash TEXT");
+}
+
+// Seed : créer un compte admin depuis les variables d'env s'il n'en existe aucun
+const adminExists = db.prepare("SELECT id FROM employes WHERE role = 'admin' LIMIT 1").get();
+if (!adminExists && process.env.ADMIN_EMAIL && process.env.ADMIN_PASSWORD) {
+  const hash = bcrypt.hashSync(process.env.ADMIN_PASSWORD, 10);
+  db.prepare(`
+    INSERT INTO employes (nom, prenom, email, poste, role, password_hash)
+    VALUES (?, ?, ?, ?, 'admin', ?)
+  `).run('Admin', 'Lexora', process.env.ADMIN_EMAIL, 'Administrateur', hash);
+  console.log(`✅ Compte admin créé : ${process.env.ADMIN_EMAIL}`);
+}
 
 export default db;
