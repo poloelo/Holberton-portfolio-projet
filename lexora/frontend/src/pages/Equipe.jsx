@@ -6,23 +6,15 @@
  *  - Planning  : horaires et projets assignés
  *  - Automations : tâches automatisées (admin)
  *
- * Les routes admin nécessitent un header `x-admin-key`.
- * Note : dans un vrai projet, cette clé viendrait d'une session authentifiée,
- * pas d'une constante dans le code frontend.
+ * Accès protégé par JWT (voir AuthContext). Le token est envoyé via
+ * l'header Authorization: Bearer <token> sur les routes admin.
  */
 
 import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useToast } from '../contexts/ToastContext.jsx';
+import { useAuth } from '../contexts/AuthContext.jsx';
 import Tabs from '../components/Tabs.jsx';
-
-// ── Clé admin (à remplacer par un système d'auth réel) ────
-const ADMIN_KEY = 'LEXORA_ADMIN_SECRET_2024';
-
-// Headers communs pour les routes admin
-const adminHeaders = {
-  'Content-Type': 'application/json',
-  'x-admin-key': ADMIN_KEY,
-};
 
 // ── Helper : calcul de la durée entre deux horaires ───────
 // Prend "09:00" et "17:30" → renvoie "8h30"
@@ -49,9 +41,12 @@ function Employes() {
   const [saving, setSaving]     = useState(false);
   const [search, setSearch]     = useState('');
   const toast = useToast();
+  const { authHeaders } = useAuth();
+
+  const adminHeaders = { 'Content-Type': 'application/json', ...authHeaders };
 
   const load = () =>
-    fetch('/api/employes', { headers: adminHeaders })
+    fetch('/api/employes', { headers: authHeaders })
       .then(r => r.json())
       .then(data => { setEmployes(Array.isArray(data) ? data : []); setLoading(false); })
       .catch(() => { toast('Impossible de charger les employés', 'error'); setLoading(false); });
@@ -282,9 +277,12 @@ function Automations() {
   const [loading, setLoading]         = useState(true);
   const [saving, setSaving]           = useState(false);
   const toast = useToast();
+  const { authHeaders } = useAuth();
+
+  const adminHeaders = { 'Content-Type': 'application/json', ...authHeaders };
 
   const load = () =>
-    fetch('/api/automations', { headers: adminHeaders })
+    fetch('/api/automations', { headers: authHeaders })
       .then(r => r.json())
       .then(data => { setAutomations(Array.isArray(data) ? data : []); setLoading(false); })
       .catch(() => { toast('Impossible de charger les automations', 'error'); setLoading(false); });
@@ -370,15 +368,24 @@ function Automations() {
 
 // ── Page principale exportée ───────────────────────────────
 export default function Equipe() {
+  const { logout } = useAuth();
+  const navigate   = useNavigate();
+
+  const handleLogout = () => { logout(); navigate('/login'); };
+
   return (
     <div className="page-enter">
-      <h1>
-        Équipe{' '}
-        {/* Badge visuel pour signaler que certains onglets sont admin */}
-        <span className="badge badge-cancelled" style={{ fontSize: '0.65rem', verticalAlign: 'middle' }}>
-          Admin
-        </span>
-      </h1>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.5rem' }}>
+        <h1>
+          Équipe{' '}
+          <span className="badge badge-cancelled" style={{ fontSize: '0.65rem', verticalAlign: 'middle' }}>
+            Admin
+          </span>
+        </h1>
+        <button className="danger" style={{ fontSize: '0.8rem', padding: '0.35rem 0.9rem' }} onClick={handleLogout}>
+          Déconnexion
+        </button>
+      </div>
       <p className="page-subtitle">Gestion interne — employés, planning et automations</p>
 
       <Tabs tabs={['Employés', 'Planning', 'Automations']}>

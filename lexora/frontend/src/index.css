@@ -1097,6 +1097,31 @@ tbody tr:last-child td {
   color: #999;
 }
 
+/* ── Page de login ──────────────────────────────────────── */
+.login-page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #f4f6f9;
+}
+
+.login-card {
+  background: #fff;
+  border-radius: 12px;
+  border: 1px solid #e8eaed;
+  padding: 2.5rem 2rem;
+  width: 100%;
+  max-width: 380px;
+  box-shadow: 0 4px 24px rgba(0,0,0,0.06);
+}
+
+.login-error {
+  color: #e53935;
+  font-size: 0.85rem;
+  margin-top: 0.75rem;
+}
+
 .vault-dropzone:hover {
   border-color: #c9c0fb;
   background: #faf9ff;
