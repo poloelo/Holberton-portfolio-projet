@@ -11,7 +11,6 @@
  */
 
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { useToast } from '../contexts/ToastContext.jsx';
 import { useAuth } from '../contexts/AuthContext.jsx';
 import Tabs from '../components/Tabs.jsx';
@@ -36,7 +35,7 @@ const fmtDate = d =>
 // ── Sous-composant : répertoire des employés ───────────────
 function Employes() {
   const [employes, setEmployes] = useState([]);
-  const [form, setForm]         = useState({ nom: '', prenom: '', poste: '', email: '' });
+  const [form, setForm]         = useState({ nom: '', prenom: '', poste: '', email: '', password: '' });
   const [loading, setLoading]   = useState(true);
   const [saving, setSaving]     = useState(false);
   const [search, setSearch]     = useState('');
@@ -60,12 +59,18 @@ function Employes() {
     if (!form.nom.trim()) return;
     setSaving(true);
     try {
-      await fetch('/api/employes', {
+      const res = await fetch('/api/employes', {
         method: 'POST',
         headers: adminHeaders,
         body: JSON.stringify(form),
       });
-      setForm({ nom: '', prenom: '', poste: '', email: '' });
+      if (!res.ok) {
+        const err = await res.json();
+        toast(err.error || 'Erreur lors de l\'ajout', 'error');
+        setSaving(false);
+        return;
+      }
+      setForm({ nom: '', prenom: '', poste: '', email: '', password: '' });
       await load();
       toast('Employé ajouté');
     } catch {
@@ -93,10 +98,11 @@ function Employes() {
   return (
     <div>
       <form onSubmit={ajouter}>
-        <input name="nom"    placeholder="Nom *"     value={form.nom}    onChange={handleChange} required />
-        <input name="prenom" placeholder="Prénom"    value={form.prenom} onChange={handleChange} />
-        <input name="poste"  placeholder="Poste"     value={form.poste}  onChange={handleChange} />
-        <input name="email"  placeholder="Email"     value={form.email}  onChange={handleChange} type="email" />
+        <input name="nom"      placeholder="Nom *"           value={form.nom}      onChange={handleChange} required />
+        <input name="prenom"   placeholder="Prénom"          value={form.prenom}   onChange={handleChange} />
+        <input name="poste"    placeholder="Poste"           value={form.poste}    onChange={handleChange} />
+        <input name="email"    placeholder="Email *"         value={form.email}    onChange={handleChange} type="email" required />
+        <input name="password" placeholder="Mot de passe *"  value={form.password} onChange={handleChange} type="password" required />
         <button type="submit" disabled={saving}>
           {saving ? <><span className="spinner" /> Ajout...</> : '+ Ajouter'}
         </button>
@@ -368,24 +374,14 @@ function Automations() {
 
 // ── Page principale exportée ───────────────────────────────
 export default function Equipe() {
-  const { logout } = useAuth();
-  const navigate   = useNavigate();
-
-  const handleLogout = () => { logout(); navigate('/login'); };
-
   return (
     <div className="page-enter">
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.5rem' }}>
-        <h1>
-          Équipe{' '}
-          <span className="badge badge-cancelled" style={{ fontSize: '0.65rem', verticalAlign: 'middle' }}>
-            Admin
-          </span>
-        </h1>
-        <button className="danger" style={{ fontSize: '0.8rem', padding: '0.35rem 0.9rem' }} onClick={handleLogout}>
-          Déconnexion
-        </button>
-      </div>
+      <h1>
+        Équipe{' '}
+        <span className="badge badge-cancelled" style={{ fontSize: '0.65rem', verticalAlign: 'middle' }}>
+          Admin
+        </span>
+      </h1>
       <p className="page-subtitle">Gestion interne — employés, planning et automations</p>
 
       <Tabs tabs={['Employés', 'Planning', 'Automations']}>

@@ -137,6 +137,71 @@ body {
   flex-shrink: 0;
 }
 
+/* Carte utilisateur en bas de la sidebar */
+.sidebar-user-card {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px 14px;
+  margin: 8px 10px 0;
+  background: #252840;
+  border-radius: 8px;
+}
+
+.sidebar-user-avatar {
+  width: 32px;
+  height: 32px;
+  background: #7c6af7;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #fff;
+  flex-shrink: 0;
+}
+
+.sidebar-user-info {
+  flex: 1;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.sidebar-user-name {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: #e0e2ee;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.sidebar-user-role {
+  font-size: 0.72rem;
+  color: #666;
+}
+
+.sidebar-logout-btn {
+  background: none;
+  border: none;
+  color: #555;
+  cursor: pointer;
+  font-size: 1rem;
+  padding: 2px 4px;
+  border-radius: 4px;
+  transition: color 0.2s;
+  flex-shrink: 0;
+}
+
+.sidebar-logout-btn:hover {
+  color: #e05454;
+  background: none;
+  box-shadow: none;
+}
+
 /* ── Content ─────────────────────────────────────────────── */
 .content {
   flex: 1;
@@ -1120,6 +1185,53 @@ tbody tr:last-child td {
   color: #e53935;
   font-size: 0.85rem;
   margin-top: 0.75rem;
+}
+
+/* ── Mon Espace (page employé) ──────────────────────────── */
+.mon-espace-next {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: #f0eeff;
+  border: 1px solid #d8d0ff;
+  border-radius: 10px;
+  padding: 14px 18px;
+  margin: 1.5rem 0 0;
+  flex-wrap: wrap;
+}
+
+.mon-espace-next-label {
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #7c6af7;
+  font-weight: 700;
+  width: 100%;
+}
+
+.mon-espace-next strong {
+  font-size: 1rem;
+  color: #1a1d2e;
+}
+
+/* Boutons de filtre (à venir / tout) */
+.btn-filter {
+  background: #f0f0f5;
+  border: 1px solid #e0e0ea;
+  border-radius: 20px;
+  padding: 3px 12px;
+  font-size: 0.8rem;
+  cursor: pointer;
+  color: #666;
+  transition: background 0.15s, color 0.15s;
+}
+
+.btn-filter:hover,
+.btn-filter.active {
+  background: #7c6af7;
+  color: #fff;
+  border-color: #7c6af7;
+  box-shadow: none;
 }
 
 .vault-dropzone:hover {
