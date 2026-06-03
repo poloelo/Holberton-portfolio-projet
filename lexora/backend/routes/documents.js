@@ -81,23 +81,32 @@ router.post('/dossiers', (req, res) => {
   }
 });
 
-// DELETE /api/documents/dossiers/:id — Supprimer un dossier (et son contenu)
+// Supprime récursivement un dossier et tous ses sous-dossiers/fichiers
+function supprimerDossierRecursif(dossierId) {
+  // Supprimer les fichiers physiques et enregistrements du dossier courant
+  const docs = db.prepare('SELECT * FROM documents WHERE dossier_id = ?').all(dossierId);
+  for (const doc of docs) {
+    const filePath = path.join(UPLOADS_DIR, doc.nom_fichier);
+    if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+  }
+  db.prepare('DELETE FROM documents WHERE dossier_id = ?').run(dossierId);
+
+  // Récursion sur les sous-dossiers
+  const sousDossiers = db.prepare('SELECT id FROM dossiers WHERE parent_id = ?').all(dossierId);
+  for (const sd of sousDossiers) {
+    supprimerDossierRecursif(sd.id);
+  }
+
+  db.prepare('DELETE FROM dossiers WHERE id = ?').run(dossierId);
+}
+
+// DELETE /api/documents/dossiers/:id — Supprimer un dossier (et tout son contenu, récursivement)
 router.delete('/dossiers/:id', (req, res) => {
   try {
     const dossier = db.prepare('SELECT * FROM dossiers WHERE id = ?').get(req.params.id);
     if (!dossier) return res.status(404).json({ error: 'Dossier non trouvé' });
 
-    // Supprimer les fichiers physiques des documents dans ce dossier
-    const docs = db.prepare('SELECT * FROM documents WHERE dossier_id = ?').all(req.params.id);
-    for (const doc of docs) {
-      const filePath = path.join(UPLOADS_DIR, doc.nom_fichier);
-      if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
-    }
-
-    // Supprimer les enregistrements en base
-    db.prepare('DELETE FROM documents WHERE dossier_id = ?').run(req.params.id);
-    db.prepare('DELETE FROM dossiers WHERE id = ?').run(req.params.id);
-
+    supprimerDossierRecursif(req.params.id);
     res.json({ message: 'Dossier supprimé' });
   } catch {
     res.status(500).json({ error: 'Erreur serveur' });

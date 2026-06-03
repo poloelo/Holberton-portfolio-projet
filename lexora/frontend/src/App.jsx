@@ -10,8 +10,9 @@
  *    soient accessibles partout via useToast()
  */
 
-import { Routes, Route, NavLink } from 'react-router-dom';
+import { Routes, Route, NavLink, Navigate } from 'react-router-dom';
 import { ToastProvider } from './contexts/ToastContext.jsx';
+import { AuthProvider, useAuth } from './contexts/AuthContext.jsx';
 
 import Dashboard       from './pages/Dashboard.jsx';
 import Taches          from './pages/Taches.jsx';
@@ -20,6 +21,12 @@ import Calendrier      from './pages/Calendrier.jsx';
 import CoffreFort      from './pages/Coffre_fort.jsx';
 import Assistant       from './pages/Assistant.jsx';
 import Equipe          from './pages/Equipe.jsx';
+import Login           from './pages/Login.jsx';
+
+function PrivateRoute({ children }) {
+  const { isAuthenticated } = useAuth();
+  return isAuthenticated ? children : <Navigate to="/login" replace />;
+}
 
 // ── Navigation principale (haut de la sidebar) ────────────
 const NAV_PRINCIPAL = [
@@ -40,6 +47,7 @@ const NAV_ADMIN = [
 
 export default function App() {
   return (
+    <AuthProvider>
     <ToastProvider>
       <div className="app-layout">
 
@@ -93,11 +101,13 @@ export default function App() {
             <Route path="/calendrier" element={<Calendrier />} />
             <Route path="/documents"  element={<CoffreFort />} />
             <Route path="/assistant"  element={<Assistant />} />
-            <Route path="/equipe"     element={<Equipe />} />
+            <Route path="/equipe"     element={<PrivateRoute><Equipe /></PrivateRoute>} />
+            <Route path="/login"      element={<Login />} />
           </Routes>
         </main>
 
       </div>
     </ToastProvider>
+    </AuthProvider>
   );
 }

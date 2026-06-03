@@ -1,16 +1,10 @@
 import express from 'express';
 import db from '../models/db.js';
+import { verifyJWT } from '../middleware/auth.js';
 
 const router = express.Router();
 
-// Middleware Admin
-const isAdmin = (req, res, next) => {
-  const adminKey = req.headers['x-admin-key'];
-  if (adminKey !== process.env.ADMIN_KEY) {
-    return res.status(403).json({ error: 'Accès refusé — Admin uniquement' });
-  }
-  next();
-};
+const isAdmin = verifyJWT;
 
 // GET — Tous les employés (Admin)
 router.get('/', isAdmin, (req, res) => {
