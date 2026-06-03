@@ -3,9 +3,15 @@ import { createContext, useContext, useState } from 'react';
 const AuthContext = createContext(null);
 
 const TOKEN_KEY = 'lexora_jwt';
+const USER_KEY  = 'lexora_user';
+
+function parseStoredUser() {
+  try { return JSON.parse(localStorage.getItem(USER_KEY)); } catch { return null; }
+}
 
 export function AuthProvider({ children }) {
   const [token, setToken] = useState(() => localStorage.getItem(TOKEN_KEY));
+  const [user, setUser]   = useState(parseStoredUser);
 
   const login = async (email, password) => {
     const res = await fetch('/api/auth/login', {
@@ -17,23 +23,25 @@ export function AuthProvider({ children }) {
       const err = await res.json();
       throw new Error(err.error || 'Échec de la connexion');
     }
-    const { token: t } = await res.json();
+    const { token: t, user: u } = await res.json();
     localStorage.setItem(TOKEN_KEY, t);
+    localStorage.setItem(USER_KEY, JSON.stringify(u));
     setToken(t);
+    setUser(u);
+    return u;
   };
 
   const logout = () => {
     localStorage.removeItem(TOKEN_KEY);
+    localStorage.removeItem(USER_KEY);
     setToken(null);
+    setUser(null);
   };
 
-  // Headers à passer à fetch() pour les routes protégées
-  const authHeaders = token
-    ? { Authorization: `Bearer ${token}` }
-    : {};
+  const authHeaders = token ? { Authorization: `Bearer ${token}` } : {};
 
   return (
-    <AuthContext.Provider value={{ token, login, logout, authHeaders, isAuthenticated: !!token }}>
+    <AuthContext.Provider value={{ token, user, login, logout, authHeaders, isAuthenticated: !!token }}>
       {children}
     </AuthContext.Provider>
   );
