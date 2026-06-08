@@ -4,7 +4,7 @@
  * Ce fichier :
  *  1. Charge la configuration depuis .env
  *  2. Crée l'application Express
- *  3. Enregistre les middlewares globaux (CORS, JSON)
+ *  3. Enregistre les middlewares globaux (CORS, helmet, rate-limit, JSON)
  *  4. Monte chaque module de routes sous son préfixe /api/...
  *  5. Lance le serveur sur le port configuré
  *
@@ -17,6 +17,8 @@ import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 import express from 'express';
 import cors from 'cors';
+import helmet from 'helmet';
+import rateLimit from 'express-rate-limit';
 
 // ── Import des modules de routes ──────────────────────────────
 import tachesRouter      from './routes/taches.js';
@@ -32,34 +34,56 @@ import documentsRouter   from './routes/documents.js';
 import authRouter        from './routes/auth.js';
 
 // ── Configuration ─────────────────────────────────────────────
-// __dirname n'existe pas en ES modules (type: "module"), on le recrée.
 const __dirname = dirname(fileURLToPath(import.meta.url));
-
-// Charge le fichier .env situé un cran au-dessus (lexora/.env)
 dotenv.config({ path: join(__dirname, '../.env') });
 
-// ── Application Express ───────────────────────────────────────
 const app  = express();
 const PORT = process.env.PORT || 3000;
 
-// Middleware CORS : autorise les requêtes cross-origin (utile en développement
-// quand le frontend tourne sur un port différent du backend).
-// En production, Nginx sert les deux sur le même domaine donc CORS n'est
-// pas strictement nécessaire, mais on le laisse pour la flexibilité.
-app.use(cors());
+// ── Sécurité : Headers HTTP ───────────────────────────────────
+// helmet() ajoute ~14 headers de sécurité (CSP, HSTS, X-Frame-Options...)
+app.use(helmet());
 
-// Middleware JSON : parse automatiquement les corps de requête JSON
-// et rend req.body disponible dans les handlers.
+// ── Sécurité : CORS strict ────────────────────────────────────
+// Seules les origines listées dans ALLOWED_ORIGINS peuvent appeler l'API.
+const ALLOWED_ORIGINS = (process.env.ALLOWED_ORIGINS || 'http://localhost:5173')
+  .split(',')
+  .map(o => o.trim());
+
+app.use(cors({
+  origin: (origin, callback) => {
+    if (!origin || ALLOWED_ORIGINS.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error(`CORS bloqué pour l'origine : ${origin}`));
+    }
+  },
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  credentials: true,
+}));
+
+// ── Sécurité : Rate Limiting ──────────────────────────────────
+// Limite chaque IP à 100 requêtes par fenêtre de 15 minutes.
+// Protège contre le brute-force et les attaques DDoS basiques.
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 100,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Trop de requêtes, veuillez réessayer dans 15 minutes.' },
+});
+app.use('/api/', limiter);
+
+// ── Parsing JSON ──────────────────────────────────────────────
 app.use(express.json());
 
 // ── Route de santé ────────────────────────────────────────────
-// Utilisée par Docker / load-balancers pour vérifier que le service est vivant.
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
 // ── Montage des routes ────────────────────────────────────────
-// Chaque préfixe correspond à un module métier indépendant.
 app.use('/api/auth',        authRouter);
 app.use('/api/taches',      tachesRouter);
 app.use('/api/factures',    facturesRouter);
@@ -67,12 +91,12 @@ app.use('/api/planning',    planningRouter);
 app.use('/api/assistant',   assistantRouter);
 app.use('/api/todos',       todosRouter);
 app.use('/api/clients',     clientsRouter);
-app.use('/api/employes',    employesRouter);     // Protégé par isAdmin
-app.use('/api/automations', automationsRouter);  // Protégé par isAdmin
+app.use('/api/employes',    employesRouter);     // Protégé par verifyJWT
+app.use('/api/automations', automationsRouter);  // Protégé par verifyJWT
 app.use('/api/evenements',  evenementsRouter);
 app.use('/api/documents',   documentsRouter);
 
 // ── Démarrage du serveur ──────────────────────────────────────
 app.listen(PORT, () => {
-  console.log(`✅ Lexora backend running on port ${PORT}`);
+  console.log(` Lexora backend running on port ${PORT}`);
 });
