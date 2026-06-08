@@ -74,11 +74,25 @@ function TachesProjet() {
   const handleDelete = async id => {
     try {
       await fetch(`/api/taches/${id}`, { method: 'DELETE' });
-      // Mise à jour locale sans recharger : plus rapide, meilleure UX
       setTaches(prev => prev.filter(t => t.id !== id));
       toast('Tâche supprimée');
     } catch {
       toast('Erreur lors de la suppression', 'error');
+    }
+  };
+
+  const handleStatutChange = async (tache, newStatut) => {
+    try {
+      const res = await fetch(`/api/taches/${tache.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...tache, statut: newStatut }),
+      });
+      if (!res.ok) throw new Error();
+      setTaches(prev => prev.map(t => t.id === tache.id ? { ...t, statut: newStatut } : t));
+      toast('Statut mis à jour');
+    } catch {
+      toast('Erreur lors de la mise à jour', 'error');
     }
   };
 
@@ -132,7 +146,17 @@ function TachesProjet() {
             <tr key={t.id}>
               <td style={{ fontWeight: 500 }}>{t.titre}</td>
               <td style={{ color: '#666' }}>{t.description || <span style={{ color: '#ccc' }}>—</span>}</td>
-              <td><StatusBadge statut={t.statut} /></td>
+              <td>
+                <select
+                  value={t.statut}
+                  onChange={e => handleStatutChange(t, e.target.value)}
+                  className={`statut-select statut-${t.statut}`}
+                >
+                  <option value="todo">À faire</option>
+                  <option value="in_progress">En cours</option>
+                  <option value="done">Terminé</option>
+                </select>
+              </td>
               <td>{t.assignee || <span style={{ color: '#ccc' }}>—</span>}</td>
               <td style={{ color: '#999', fontSize: '0.84rem' }}>
                 {t.created_at ? new Date(t.created_at).toLocaleDateString('fr-FR') : '—'}
