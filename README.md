@@ -1,375 +1,607 @@
-# Lexora — ERP Portfolio Project
+# Lexora — ERP Full-Stack Application
 
-> **Projet de portfolio Holberton School** — Application ERP (Enterprise Resource Planning) full-stack pour la gestion d'une petite structure (tâches, clients, factures, calendrier, documents, IA).
+> **Holberton School Portfolio Project** — A full-stack Enterprise Resource Planning (ERP) web application for small teams: task management, CRM, invoicing, calendar, document vault, and AI assistant.
 
----
-
-## Table des matières
-
-- [Aperçu](#aperçu)
-- [Fonctionnalités](#fonctionnalités)
-- [Stack technique](#stack-technique)
-- [Architecture](#architecture)
-- [Démarrage rapide](#démarrage-rapide)
-  - [Avec Docker (recommandé)](#avec-docker-recommandé)
-  - [En local (développement)](#en-local-développement)
-- [Variables d'environnement](#variables-denvironnement)
-- [Routes API](#routes-api)
-- [Structure du projet](#structure-du-projet)
-- [Équipe](#équipe)
+[![Node.js](https://img.shields.io/badge/Node.js-18-green?logo=nodedotjs)](https://nodejs.org)
+[![React](https://img.shields.io/badge/React-18-blue?logo=react)](https://react.dev)
+[![SQLite](https://img.shields.io/badge/SQLite-3-lightblue?logo=sqlite)](https://www.sqlite.org)
+[![Docker](https://img.shields.io/badge/Docker-Compose-blue?logo=docker)](https://docs.docker.com/compose)
+[![License](https://img.shields.io/badge/License-Educational-orange)](LICENSE)
 
 ---
 
-## Aperçu
+## Table of Contents
 
-Lexora est une application web full-stack qui centralise les outils essentiels d'une équipe :
-
-- **Gestion de tâches** projets et notes rapides
-- **CRM léger** — contacts clients + facturation en euros
-- **Calendrier interactif** avec codes couleur par type d'événement
-- **Coffre-fort documentaire** — dossiers hiérarchiques, upload par glisser-déposer
-- **Assistant IA** — chat avec un LLM local via Ollama
-- **Espace équipe** (admin) — répertoire employés, planning, automatisations
-
-![Dashboard Lexora](https://via.placeholder.com/900x450?text=Dashboard+Lexora)
+- [Overview](#overview)
+- [Features](#features)
+- [Application Architecture](#application-architecture)
+- [Database Diagram](#database-diagram)
+- [Tech Stack](#tech-stack)
+- [Quick Start](#quick-start)
+  - [Docker (Recommended)](#docker-recommended)
+  - [Local Development](#local-development)
+- [Environment Variables](#environment-variables)
+- [API Reference](#api-reference)
+- [Project Structure](#project-structure)
+- [Security](#security)
+- [Team](#team)
 
 ---
 
-## Fonctionnalités
+## Overview
+
+**Lexora** is a centralized workspace for small business operations. It replaces scattered tools with a single, integrated application:
+
+- A unified **dashboard** with live KPIs (task count, invoice totals, pending items)
+- **Task management** for project tracking and quick notes
+- **CRM + Invoicing** for client and billing management
+- **Interactive calendar** integrating events and staff schedules
+- **Document vault** with folder hierarchy and drag-and-drop uploads
+- **AI assistant** powered by a local LLM via Ollama
+- **Admin panel** for employee directory, schedules, and automation rules
+
+---
+
+## Features
 
 | Module | Description |
 |--------|-------------|
-| 📋 **Tâches** | Tâches projet (statut, assignée) + notes rapides avec priorité |
-| 👥 **Clients & Factures** | Base contacts + facturation avec statuts (en attente / payée / annulée) |
-| 📅 **Calendrier** | Vue mois/semaine/jour, création d'événements par clic, intégration du planning |
-| 📁 **Documents** | Arborescence de dossiers, upload drag-and-drop, téléchargement, 50 MB max |
-| 🤖 **Assistant IA** | Chat temps réel avec un LLM local (Ollama / llama3.2) |
-| ⚙️ **Équipe (Admin)** | Gestion des employés, planning des horaires, règles d'automatisation |
-| 📊 **Dashboard** | Vue d'ensemble avec compteurs animés (tâches, factures, CA total) |
+| 📊 **Dashboard** | Animated KPI cards — task counts, invoice totals, pending items |
+| ✅ **Tasks** | Project tasks (status, assignee) + quick sticky notes with priority |
+| 💶 **Clients & Invoices** | Contact management + invoices with status tracking (pending / paid / cancelled) |
+| 📅 **Calendar** | Month/week/day views, click-to-create events, staff schedule integration |
+| 📁 **Document Vault** | Hierarchical folder tree, drag-and-drop upload, file download, 50 MB limit |
+| 🤖 **AI Assistant** | Real-time chat with a local LLM (Ollama / llama3.2) |
+| 👥 **Team (Admin)** | Employee directory, shift planning, automation rule management |
 
 ---
 
-## Stack technique
+## Application Architecture
+
+### High-Level Overview
+
+```mermaid
+graph TB
+    subgraph Client["Browser (Client)"]
+        React["React 18 SPA\n(Vite build)"]
+    end
+
+    subgraph Docker["Docker Compose"]
+        subgraph FrontendContainer["Frontend Container"]
+            Nginx["Nginx\n:80"]
+        end
+
+        subgraph BackendContainer["Backend Container"]
+            Express["Express REST API\n:3000"]
+            Routes["Route Modules\n(11 domains)"]
+            Middleware["Middleware\nHelmet · CORS · JWT · Rate-limit"]
+        end
+
+        subgraph Data["Persistent Volumes"]
+            SQLite["SQLite\nlexora.db"]
+            Uploads["File Storage\n/uploads/"]
+        end
+    end
+
+    subgraph External["External (Host)"]
+        Ollama["Ollama LLM\n:11434\n(optional)"]
+    end
+
+    React -- "HTTP :80" --> Nginx
+    Nginx -- "Static files\nindex.html + assets" --> React
+    Nginx -- "Proxy /api/*\n(HTTP internal)" --> Express
+    Express --> Middleware
+    Middleware --> Routes
+    Routes -- "better-sqlite3\n(synchronous)" --> SQLite
+    Routes -- "multer\nuploads" --> Uploads
+    Routes -- "HTTP POST\n/api/chat" --> Ollama
+```
+
+### Request Flow
+
+```mermaid
+sequenceDiagram
+    participant B as Browser
+    participant N as Nginx
+    participant E as Express API
+    participant D as SQLite DB
+
+    B->>N: GET /
+    N-->>B: index.html + React bundle
+
+    B->>N: POST /api/auth/login
+    N->>E: proxy → :3000
+    E->>D: SELECT employe WHERE email=?
+    D-->>E: row (with password_hash)
+    E-->>N: { token, user }
+    N-->>B: JWT token
+
+    B->>N: GET /api/taches (Bearer token)
+    N->>E: proxy → :3000
+    E->>E: verifyJWT middleware
+    E->>D: SELECT * FROM taches
+    D-->>E: rows[]
+    E-->>B: JSON array
+```
+
+### Frontend Architecture
+
+```mermaid
+graph TD
+    main["main.jsx\nReactDOM.createRoot"] --> App
+
+    App --> AuthProvider["AuthProvider\n(JWT context)"]
+    App --> ToastProvider["ToastProvider\n(notifications)"]
+    App --> Router["React Router v6"]
+
+    Router --> Login["Login\n/login"]
+    Router --> AppLayout["AppLayout\n(sidebar + main)"]
+
+    AppLayout --> Sidebar["Sidebar\n(navigation)"]
+    AppLayout --> Pages
+
+    Pages --> Dashboard["/"]
+    Pages --> Taches["/taches"]
+    Pages --> ClientsFactures["/business"]
+    Pages --> Calendrier["/calendrier"]
+    Pages --> CoffreFort["/documents"]
+    Pages --> Assistant["/assistant"]
+    Pages --> Equipe["/equipe\n(admin only)"]
+    Pages --> MonEspace["/mon-espace\n(auth required)"]
+```
+
+---
+
+## Database Diagram
+
+```mermaid
+erDiagram
+    employes {
+        INTEGER id PK
+        TEXT nom
+        TEXT prenom
+        TEXT email
+        TEXT poste
+        TEXT departement
+        REAL salaire
+        TEXT date_embauche
+        TEXT role
+        TEXT password_hash
+        TEXT created_at
+    }
+
+    taches {
+        INTEGER id PK
+        TEXT titre
+        TEXT description
+        TEXT statut
+        TEXT assignee
+        TEXT created_at
+    }
+
+    todos {
+        INTEGER id PK
+        TEXT titre
+        TEXT description
+        TEXT date
+        TEXT priorite
+        TEXT statut
+        TEXT created_at
+    }
+
+    clients {
+        INTEGER id PK
+        TEXT type_client
+        TEXT email
+        TEXT telephone
+        TEXT adresse
+        TEXT nom
+        TEXT prenom
+        TEXT raison_sociale
+        TEXT siret
+        TEXT tva
+        TEXT contact_nom
+        TEXT created_at
+    }
+
+    factures {
+        INTEGER id PK
+        TEXT client
+        REAL montant
+        TEXT statut
+        TEXT date_emission
+        TEXT date_echeance
+    }
+
+    evenements {
+        INTEGER id PK
+        TEXT titre
+        TEXT description
+        TEXT date_debut
+        TEXT date_fin
+        TEXT type
+        TEXT couleur
+        TEXT created_by
+        TEXT created_at
+    }
+
+    planning {
+        INTEGER id PK
+        TEXT employe
+        TEXT date
+        TEXT heure_debut
+        TEXT heure_fin
+        TEXT projet
+    }
+
+    automations {
+        INTEGER id PK
+        TEXT nom
+        TEXT description
+        TEXT type
+        TEXT frequence
+        TEXT action
+        INTEGER actif
+        TEXT created_at
+    }
+
+    dossiers {
+        INTEGER id PK
+        TEXT nom
+        TEXT description
+        INTEGER parent_id FK
+        TEXT created_at
+    }
+
+    documents {
+        INTEGER id PK
+        TEXT nom
+        TEXT nom_fichier
+        TEXT type
+        TEXT taille
+        TEXT statut
+        TEXT description
+        INTEGER dossier_id FK
+        TEXT created_at
+    }
+
+    dossiers ||--o{ dossiers : "parent_id (self-reference)"
+    dossiers ||--o{ documents : "dossier_id"
+```
+
+### Table Reference
+
+| Table | Purpose | Key Fields |
+|-------|---------|------------|
+| `employes` | Employee directory + auth accounts | `email`, `role`, `password_hash` |
+| `taches` | Project tasks | `titre`, `statut` (todo/in_progress/done), `assignee` |
+| `todos` | Quick sticky notes | `titre`, `priorite`, `statut` |
+| `clients` | Client contacts (individuals + companies) | `type_client`, `email`, `nom`/`raison_sociale` |
+| `factures` | Invoices | `client`, `montant`, `statut` (en attente/payee/annulee) |
+| `evenements` | Calendar events | `titre`, `date_debut`, `date_fin`, `type`, `couleur` |
+| `planning` | Employee work schedules | `employe`, `date`, `heure_debut`, `heure_fin` |
+| `automations` | Automation rules (admin) | `nom`, `action`, `actif` |
+| `dossiers` | Document vault folders (tree via `parent_id`) | `nom`, `parent_id` |
+| `documents` | Uploaded file metadata | `nom`, `nom_fichier`, `type`, `taille`, `dossier_id` |
+
+---
+
+## Tech Stack
 
 ### Backend
-| Technologie | Rôle |
-|------------|------|
-| **Node.js 18** + **Express 4** | Serveur REST API |
-| **better-sqlite3** | Base de données SQLite synchrone, embarquée |
-| **Multer** | Gestion des uploads de fichiers |
-| **dotenv** | Configuration par variables d'environnement |
-| **Ollama** (externe) | LLM local (modèle `llama3.2`) |
+
+| Technology | Version | Role |
+|-----------|---------|------|
+| **Node.js** | 18 | JavaScript runtime |
+| **Express** | 4 | HTTP server, REST API |
+| **better-sqlite3** | 9+ | Synchronous SQLite driver |
+| **jsonwebtoken** | 9 | JWT authentication |
+| **bcryptjs** | 3 | Password hashing |
+| **Multer** | 2 | Multipart file uploads |
+| **Helmet** | 8 | HTTP security headers |
+| **express-rate-limit** | 8 | Request rate limiting |
+| **dotenv** | 16 | Environment configuration |
 
 ### Frontend
-| Technologie | Rôle |
-|------------|------|
-| **React 18** + **Vite 5** | Interface SPA avec HMR |
-| **React Router 6** | Navigation côté client |
-| **react-big-calendar** | Composant calendrier interactif |
-| **date-fns** (locale `fr`) | Manipulation et formatage des dates |
-| **CSS vanilla** | Styling complet (1100+ lignes, aucune dépendance externe) |
+
+| Technology | Version | Role |
+|-----------|---------|------|
+| **React** | 18 | UI framework (SPA) |
+| **Vite** | 5 | Build tool + dev server |
+| **React Router** | 6 | Client-side routing |
+| **react-big-calendar** | 1 | Interactive calendar component |
+| **date-fns** | 4 | Date manipulation + fr locale |
+| **CSS (vanilla)** | — | Custom design system (1,300+ lines) |
 
 ### Infrastructure
-| Technologie | Rôle |
-|------------|------|
-| **Docker** + **Docker Compose** | Conteneurisation (backend + frontend) |
-| **Nginx (Alpine)** | Reverse proxy, serveur de fichiers statiques |
-| **Volume Docker** | Persistance de la base SQLite et des fichiers uploadés |
+
+| Technology | Role |
+|-----------|------|
+| **Docker** + **Docker Compose** | Containerization (2 containers) |
+| **Nginx (Alpine)** | Reverse proxy + static file server |
+| **Docker volumes** | SQLite persistence + file uploads |
+| **Ollama** (optional) | Local LLM for AI assistant |
 
 ---
 
-## Architecture
+## Quick Start
 
-```
-Navigateur
-    │
-    │  HTTP :80
-    ▼
-┌─────────────┐
-│   Nginx     │  ← Sert les fichiers statiques React (SPA)
-│  (Frontend) │  ← Proxy /api/* → backend:3000
-└──────┬──────┘
-       │ HTTP interne
-       ▼
-┌─────────────┐
-│   Express   │  ← REST API (10 modules de routes)
-│  (Backend)  │
-│   Port 3000 │
-└──────┬──────┘
-       │
-   ┌───┴───┐
-   │SQLite │  ← Fichier lexora.db (volume Docker persisté)
-   └───────┘
-       │
-  (optionnel)
-       │
-┌─────────────┐
-│   Ollama    │  ← LLM local (llama3.2) — sur le host
-│ Port 11434  │    (host.docker.internal depuis Docker)
-└─────────────┘
-```
+### Docker (Recommended)
 
-### Flux de données
-
-1. Le **frontend React** (SPA) tourne dans le navigateur après avoir été servi par Nginx
-2. Les appels API (`/api/*`) sont proxifiés par Nginx vers le **backend Express** (port 3000)
-3. Le backend lit et écrit dans **SQLite** via `better-sqlite3` (synchrone, pas de promesses)
-4. Les fichiers uploadés sont stockés physiquement dans `/app/uploads/` (volume Docker)
-5. L'assistant IA appelle **Ollama** en HTTP sur le host machine
-
----
-
-## Démarrage rapide
-
-### Avec Docker (recommandé)
-
-**Prérequis :** Docker et Docker Compose installés.
+**Prerequisites:** Docker and Docker Compose installed.
 
 ```bash
-# 1. Cloner le dépôt
-git clone https://github.com/<votre-org>/Holberton-portfolio-projet.git
+# 1. Clone the repository
+git clone https://github.com/poloelo/Holberton-portfolio-projet.git
 cd Holberton-portfolio-projet
 
-# 2. Configurer les variables d'environnement
-cp .env.example lexora/.env
-# Éditez lexora/.env selon votre configuration
+# 2. Configure environment
+#    lexora/.env is already pre-configured for Docker
+#    Edit lexora/.env to set your own JWT_SECRET before production use
 
-# 3. Lancer l'application
+# 3. Start the application
 docker compose up --build
 
-# L'application est disponible sur http://localhost
+# Application is available at http://localhost
 ```
 
-> **Assistant IA :** Pour utiliser l'assistant, installez [Ollama](https://ollama.ai) sur votre machine et lancez :
+**Default admin account:**
+```
+Email:    admin@lexora.fr
+Password: Admin1234!
+```
+
+> **AI Assistant:** To enable the AI assistant, install [Ollama](https://ollama.ai) on your host:
 > ```bash
 > ollama pull llama3.2
 > ollama serve
 > ```
 
-Pour arrêter :
+To stop:
 ```bash
 docker compose down
-# Pour supprimer aussi les volumes (ATTENTION : efface toutes les données) :
+
+# Remove volumes (WARNING: deletes all data)
 docker compose down -v
 ```
 
 ---
 
-### En local (développement)
+### Local Development
 
-**Prérequis :** Node.js 18+, npm.
+**Prerequisites:** Node.js 18+, npm.
 
 ```bash
-# ── Backend ──────────────────────────────────────
-cd lexora/backend
-cp ../../.env.example ../.env          # ou créez lexora/.env manuellement
-npm install
-npm run dev      # démarre avec node --watch (rechargement auto)
+# Clone
+git clone https://github.com/poloelo/Holberton-portfolio-projet.git
+cd Holberton-portfolio-projet
 
-# ── Frontend (dans un autre terminal) ────────────
+# Backend
+cd lexora/backend
+npm install
+npm run dev          # starts with node --watch (auto-reload) on :3000
+
+# Frontend (new terminal)
 cd lexora/frontend
 npm install
-npm run dev      # Vite sur http://localhost:5173 avec proxy → backend:3000
+npm run dev          # Vite dev server on http://localhost:5173
 ```
 
-Le proxy Vite (`vite.config.js`) redirige automatiquement `/api/*` vers `http://localhost:3000`.
+The Vite dev proxy (`vite.config.js`) automatically forwards `/api/*` to `http://localhost:3000`.
 
 ---
 
-## Variables d'environnement
+## Environment Variables
 
-Créez un fichier `lexora/.env` basé sur `.env.example` :
+File location: `lexora/.env`
 
-| Variable | Défaut | Description |
-|----------|--------|-------------|
-| `PORT` | `3000` | Port du serveur Express |
-| `DB_PATH` | `./lexora.db` | Chemin vers le fichier SQLite |
-| `OLLAMA_URL` | `http://localhost:11434` | URL du serveur Ollama |
-| `ADMIN_KEY` | *(obligatoire)* | Clé secrète pour les routes admin |
-| `OLLAMA_MODEL` | `llama3.2` | Modèle Ollama utilisé par l'assistant |
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `PORT` | `3000` | Express server port |
+| `DB_PATH` | `./lexora.db` | SQLite file path |
+| `JWT_SECRET` | *(required)* | Secret key for signing JWT tokens |
+| `ADMIN_KEY` | *(required)* | Secret key for admin API routes |
+| `ALLOWED_ORIGINS` | `http://localhost` | Comma-separated CORS allowed origins |
+| `ADMIN_EMAIL` | — | Seeds an admin account on first startup |
+| `ADMIN_PASSWORD` | — | Password for the seeded admin account |
+| `OLLAMA_URL` | `http://localhost:11434` | Ollama server URL |
+| `OLLAMA_MODEL` | `llama3.2` | LLM model used by the AI assistant |
 
-> ⚠️ Ne commitez jamais votre `.env` ! Il est dans `.gitignore`.
+> **Security:** Never commit your `.env` file. It is listed in `.gitignore`.
 
 ---
 
-## Routes API
+## API Reference
 
-### Santé
-```
-GET  /api/health            → { status: 'ok', timestamp }
-```
+All endpoints are prefixed with `/api`.
 
-### Tâches projet
+### Health
 ```
-GET    /api/taches          → Liste toutes les tâches (tri: créé récent en premier)
-POST   /api/taches          → Crée une tâche  { titre*, description, statut, assignee }
-PUT    /api/taches/:id      → Modifie une tâche
-DELETE /api/taches/:id      → Supprime une tâche
+GET  /api/health         → { status: 'ok', timestamp }
 ```
 
-### Notes rapides (Todos)
+### Authentication
 ```
-GET    /api/todos           → Liste tous les todos
-POST   /api/todos           → Crée un todo  { titre*, description, date, priorite, statut }
-PUT    /api/todos/:id       → Modifie un todo
-DELETE /api/todos/:id       → Supprime un todo
+POST /api/auth/login     → { token, user }   Body: { email, password }
+```
+
+### Tasks
+```
+GET    /api/taches       → Task[]
+POST   /api/taches       → Task      Body: { titre*, description, statut, assignee }
+PUT    /api/taches/:id   → Task      Body: { titre*, description, statut, assignee }
+DELETE /api/taches/:id   → { success: true }
+```
+
+### Quick Notes (Todos)
+```
+GET    /api/todos        → Todo[]
+POST   /api/todos        → Todo     Body: { titre*, description, date, priorite, statut }
+PUT    /api/todos/:id    → Todo
+DELETE /api/todos/:id    → { success: true }
 ```
 
 ### Clients
 ```
-GET    /api/clients         → Liste tous les clients
-GET    /api/clients/:id     → Récupère un client
-POST   /api/clients         → Crée un client  { email*, nom*, ... }
-PUT    /api/clients/:id     → Modifie un client
-DELETE /api/clients/:id     → Supprime un client
+GET    /api/clients      → Client[]
+GET    /api/clients/:id  → Client
+POST   /api/clients      → Client   Body: { email*, nom* | raison_sociale*, type_client, ... }
+PUT    /api/clients/:id  → Client
+DELETE /api/clients/:id  → { message }
 ```
 
-### Factures
+### Invoices
 ```
-GET    /api/factures        → Liste toutes les factures
-POST   /api/factures        → Crée une facture  { client*, montant*, statut, ... }
-PUT    /api/factures/:id    → Modifie une facture
-DELETE /api/factures/:id    → Supprime une facture
-```
-
-### Événements (Calendrier)
-```
-GET    /api/evenements      → Liste tous les événements (tri: date_debut ASC)
-GET    /api/evenements/:id  → Récupère un événement
-POST   /api/evenements      → Crée un événement  { titre*, date_debut*, ... }
-PUT    /api/evenements/:id  → Modifie un événement (mise à jour partielle)
-DELETE /api/evenements/:id  → Supprime un événement
+GET    /api/factures     → Invoice[]
+POST   /api/factures     → Invoice  Body: { client*, montant*, statut, date_emission, date_echeance }
+PUT    /api/factures/:id → Invoice
+DELETE /api/factures/:id → { success: true }
 ```
 
-### Planning
+### Calendar Events
 ```
-GET    /api/planning        → Liste toutes les entrées de planning
-POST   /api/planning        → Crée une entrée  { employe*, date*, heure_debut*, heure_fin* }
-PUT    /api/planning/:id    → Modifie une entrée
-DELETE /api/planning/:id    → Supprime une entrée
-```
-
-### Documents (Coffre-fort)
-```
-GET    /api/documents                   → Liste les documents (filtre ?dossier_id=)
-POST   /api/documents/upload            → Upload un fichier (multipart/form-data)
-GET    /api/documents/:id/download      → Télécharge un fichier
-DELETE /api/documents/:id               → Supprime un document
-
-GET    /api/documents/dossiers          → Liste tous les dossiers
-POST   /api/documents/dossiers          → Crée un dossier  { nom*, description, parent_id }
-DELETE /api/documents/dossiers/:id      → Supprime un dossier et son contenu
+GET    /api/evenements      → Event[]
+GET    /api/evenements/:id  → Event
+POST   /api/evenements      → Event  Body: { titre*, date_debut*, date_fin, type, description }
+PUT    /api/evenements/:id  → Event
+DELETE /api/evenements/:id  → { success: true }
 ```
 
-### Routes Admin (header requis : `x-admin-key: <ADMIN_KEY>`)
+### Planning (Staff Schedules)
 ```
-GET    /api/employes        → Liste tous les employés
-GET    /api/employes/:id    → Récupère un employé
-POST   /api/employes        → Crée un employé  { nom*, email*, ... }
-PUT    /api/employes/:id    → Modifie un employé
-DELETE /api/employes/:id    → Supprime un employé
-
-GET    /api/automations     → Liste toutes les automatisations
-POST   /api/automations     → Crée une automatisation  { nom*, action* }
-PUT    /api/automations/:id → Modifie une automatisation
-DELETE /api/automations/:id → Supprime une automatisation
+GET    /api/planning      → Schedule[]
+POST   /api/planning      → Schedule  Body: { employe*, date*, heure_debut*, heure_fin*, projet }
+PUT    /api/planning/:id  → Schedule
+DELETE /api/planning/:id  → { success: true }
 ```
 
-### Assistant IA
+### Document Vault
 ```
-POST /api/assistant         → Envoie un prompt  { prompt* } → { response }
+GET    /api/documents                → Document[]  (query: ?dossier_id=)
+POST   /api/documents/upload         → Document    Body: multipart/form-data { file, dossier_id }
+GET    /api/documents/:id/download   → File stream
+DELETE /api/documents/:id            → { success: true }
+
+GET    /api/documents/dossiers       → Folder[]
+POST   /api/documents/dossiers       → Folder  Body: { nom*, description, parent_id }
+DELETE /api/documents/dossiers/:id   → { success: true }  (recursive delete)
+```
+
+### Employees — Admin (requires `Authorization: Bearer <token>`)
+```
+GET    /api/employes      → Employee[]
+GET    /api/employes/:id  → Employee
+POST   /api/employes      → Employee  Body: { nom*, email*, password*, prenom, poste }
+PUT    /api/employes/:id  → Employee
+DELETE /api/employes/:id  → { success: true }
+```
+
+### Automations — Admin (requires `Authorization: Bearer <token>`)
+```
+GET    /api/automations      → Automation[]
+POST   /api/automations      → Automation  Body: { nom*, action* }
+PUT    /api/automations/:id  → Automation
+DELETE /api/automations/:id  → { success: true }
+```
+
+### AI Assistant
+```
+POST /api/assistant   Body: { prompt* }   → { response }
 ```
 
 ---
 
-## Structure du projet
+## Project Structure
 
 ```
 Holberton-portfolio-projet/
-├── .env.example                  # Exemple de configuration (à copier en lexora/.env)
-├── README.md                     # Ce fichier
-├── docker-compose.yml            # Orchestration Docker (backend + frontend)
-├── Dockerfile.backend            # Image Node.js pour le backend
-├── Dockerfile.frontend           # Image multi-stage Vite + Nginx
-├── nginx.conf                    # Config Nginx (reverse proxy + SPA routing)
-├── .dockerignore
+├── .env.example                    # Environment template (copy to lexora/.env)
+├── README.md                       # This file
+├── QA_REPORT.md                    # Security & integration QA report
+├── docker-compose.yml              # Docker orchestration (backend + frontend)
+├── Dockerfile.backend              # Node.js 18 slim image
+├── Dockerfile.frontend             # Multi-stage: Vite build → Nginx serve
+├── nginx.conf                      # Reverse proxy + SPA routing config
 └── lexora/
+    ├── .env                        # Environment variables (not committed)
     ├── .gitignore
-    ├── package.json              # Dépendances partagées (racine workspace)
+    ├── package.json                # Shared workspace dependencies
     ├── backend/
-    │   ├── index.js              # Point d'entrée Express — déclare toutes les routes
-    │   ├── package.json          # Dépendances backend
+    │   ├── env.js                  # Loads dotenv before any other module
+    │   ├── index.js                # Express entry point — mounts all routes
+    │   ├── package.json
+    │   ├── middleware/
+    │   │   └── auth.js             # JWT verification middleware
     │   ├── models/
-    │   │   └── db.js             # Initialisation SQLite + schéma (10 tables)
-    │   ├── routes/               # Un fichier = un domaine métier
-    │   │   ├── taches.js         # CRUD tâches projet
-    │   │   ├── todos.js          # CRUD notes rapides
-    │   │   ├── factures.js       # CRUD factures
-    │   │   ├── clients.js        # CRUD clients
-    │   │   ├── evenements.js     # CRUD événements calendrier
-    │   │   ├── planning.js       # CRUD planning employés
-    │   │   ├── employes.js       # CRUD employés (admin)
-    │   │   ├── automations.js    # CRUD automatisations (admin)
-    │   │   ├── documents.js      # Dossiers + upload/download fichiers
-    │   │   └── assistant.js      # Proxy vers Ollama
-    │   └── services/
-    │       └── ollamaService.js  # Client HTTP Ollama (LLM)
+    │   │   └── db.js               # SQLite init, schema creation, admin seed
+    │   ├── routes/                 # One file per business domain
+    │   │   ├── auth.js             # Login → JWT
+    │   │   ├── taches.js           # Project task CRUD
+    │   │   ├── todos.js            # Quick note CRUD
+    │   │   ├── clients.js          # Client contact CRUD
+    │   │   ├── factures.js         # Invoice CRUD
+    │   │   ├── evenements.js       # Calendar event CRUD
+    │   │   ├── planning.js         # Staff schedule CRUD
+    │   │   ├── employes.js         # Employee CRUD (admin, JWT required)
+    │   │   ├── automations.js      # Automation rule CRUD (admin, JWT required)
+    │   │   ├── documents.js        # File vault: folders + upload/download
+    │   │   └── assistant.js        # Proxy to Ollama LLM
+    │   ├── services/
+    │   │   └── ollamaService.js    # HTTP client for Ollama
+    │   └── uploads/                # Uploaded files (gitignored, Docker volume)
     └── frontend/
         ├── index.html
-        ├── vite.config.js        # Build Vite + proxy dev
-        ├── package.json          # Dépendances frontend
+        ├── vite.config.js          # Vite build config + /api/* dev proxy
+        ├── package.json
         └── src/
-            ├── main.jsx          # ReactDOM.createRoot + BrowserRouter
-            ├── App.jsx           # Layout sidebar + React Router
-            ├── index.css         # CSS complet (1100+ lignes)
+            ├── main.jsx            # ReactDOM.createRoot + BrowserRouter
+            ├── App.jsx             # Sidebar + route definitions + guards
+            ├── index.css           # Complete design system (1,300+ lines)
             ├── contexts/
-            │   └── ToastContext.jsx  # Notifications toast globales
+            │   ├── AuthContext.jsx  # JWT state (login, logout, authHeaders)
+            │   └── ToastContext.jsx # Global toast notifications
             ├── components/
-            │   └── Tabs.jsx      # Composant onglets réutilisable
+            │   └── Tabs.jsx         # Reusable tabbed panel component
             └── pages/
-                ├── Dashboard.jsx
-                ├── Taches.jsx
-                ├── ClientsFactures.jsx
-                ├── Calendrier.jsx
-                ├── Coffre_fort.jsx
-                ├── Assistant.jsx
-                └── Equipe.jsx
+                ├── Login.jsx        # Authentication page (full-screen)
+                ├── Dashboard.jsx    # KPI overview with animated counters
+                ├── Taches.jsx       # Tasks + quick notes (tabbed)
+                ├── ClientsFactures.jsx  # CRM + invoicing (tabbed)
+                ├── Calendrier.jsx   # Interactive calendar (react-big-calendar)
+                ├── Coffre_fort.jsx  # Document vault with folder navigation
+                ├── Assistant.jsx    # AI chat interface
+                ├── Equipe.jsx       # Admin panel (employees, planning, automations)
+                └── MonEspace.jsx    # Employee personal space + schedule view
 ```
 
 ---
 
-## Base de données
+## Security
 
-Lexora utilise **SQLite** (via `better-sqlite3`). La base est un seul fichier `.db` — simple à sauvegarder, pas de serveur de base de données nécessaire.
-
-### Tables principales
-
-| Table | Description |
-|-------|-------------|
-| `taches` | Tâches projet : titre, description, statut, assignee |
-| `todos` | Notes rapides : titre, priorité, statut |
-| `factures` | Factures : client, montant, statut, dates |
-| `clients` | Contacts : particuliers et entreprises |
-| `evenements` | Événements calendrier avec type et couleur |
-| `planning` | Horaires employés (date + heures) |
-| `employes` | Répertoire de l'équipe |
-| `automations` | Règles d'automatisation |
-| `dossiers` | Répertoires du coffre-fort (arborescence via parent_id) |
-| `documents` | Métadonnées des fichiers uploadés |
+| Layer | Mechanism |
+|-------|-----------|
+| **HTTP Headers** | Helmet.js — sets 14+ security headers (CSP, HSTS, X-Frame-Options, etc.) |
+| **CORS** | Strict allowlist via `ALLOWED_ORIGINS` env var |
+| **Rate Limiting** | 100 requests / 15 min per IP on all `/api/*` routes |
+| **Authentication** | JWT (HS256, 24h expiry) via `Authorization: Bearer` header |
+| **Password Storage** | bcryptjs with 10 salt rounds |
+| **Admin Routes** | JWT required on `/api/employes` and `/api/automations` |
+| **File Uploads** | Multer — 50 MB limit, stored with timestamp-prefixed names |
+| **Input Validation** | Required fields validated in each route before DB write |
 
 ---
 
-## Équipe
+## Team
 
-Projet réalisé dans le cadre du **programme Holberton School**.
+Project completed as part of the **Holberton School** curriculum.
 
-| Rôle | Contribution |
-|------|-------------|
-| **Développeur Full-Stack** | Backend Express/SQLite, Routes API, Docker |
-| **Développeur Full-Stack** | Frontend React, UI/UX, Composants |
+| Name | Role |
+|------|------|
+| **Polo** | Full-Stack Developer — Backend API, Auth, Database, Docker |
+| *(co-author)* | Full-Stack Developer — Frontend React, UI/UX, Components |
 
 ---
 
-## Licence
+## License
 
-Ce projet est un projet pédagogique — libre d'utilisation dans un cadre non commercial.
+This project is an educational portfolio project — free to use for non-commercial purposes.

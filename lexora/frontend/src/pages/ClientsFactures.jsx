@@ -196,6 +196,21 @@ function Factures() {
     }
   };
 
+  const handleStatutChange = async (facture, newStatut) => {
+    try {
+      const res = await fetch(`/api/factures/${facture.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...facture, statut: newStatut }),
+      });
+      if (!res.ok) throw new Error();
+      setFactures(prev => prev.map(f => f.id === facture.id ? { ...f, statut: newStatut } : f));
+      toast('Statut mis à jour');
+    } catch {
+      toast('Erreur lors de la mise à jour', 'error');
+    }
+  };
+
   const filtered = factures.filter(f =>
     f.client?.toLowerCase().includes(search.toLowerCase())
   );
@@ -248,7 +263,17 @@ function Factures() {
             <tr key={f.id}>
               <td style={{ fontWeight: 500 }}>{f.client}</td>
               <td style={{ fontWeight: 600, color: '#1a1d2e' }}>{fmtMontant(f.montant)}</td>
-              <td><StatusBadge statut={f.statut} /></td>
+              <td>
+                <select
+                  value={f.statut}
+                  onChange={e => handleStatutChange(f, e.target.value)}
+                  className={`statut-select statut-facture-${f.statut?.replace(' ', '-')}`}
+                >
+                  <option value="en attente">En attente</option>
+                  <option value="payee">Payée</option>
+                  <option value="annulee">Annulée</option>
+                </select>
+              </td>
               <td style={{ color: '#999', fontSize: '0.84rem' }}>{fmtDate(f.date_emission)}</td>
               <td style={{ color: '#999', fontSize: '0.84rem' }}>{fmtDate(f.date_echeance)}</td>
               <td>

@@ -12,9 +12,7 @@
  * La base de données est initialisée au premier import de db.js.
  */
 
-import dotenv from 'dotenv';
-import { fileURLToPath } from 'url';
-import { dirname, join } from 'path';
+import './env.js';
 import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
@@ -32,10 +30,6 @@ import automationsRouter from './routes/automations.js';
 import evenementsRouter  from './routes/evenements.js';
 import documentsRouter   from './routes/documents.js';
 import authRouter        from './routes/auth.js';
-
-// ── Configuration ─────────────────────────────────────────────
-const __dirname = dirname(fileURLToPath(import.meta.url));
-dotenv.config({ path: join(__dirname, '../.env') });
 
 const app  = express();
 const PORT = process.env.PORT || 3000;
