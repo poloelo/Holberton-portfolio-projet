@@ -56,3 +56,81 @@
 | Suppression récursive dossiers |  PASS |
 | Frontend build Vite (1423 modules) |  PASS |
 | Routes publiques sans token → 200 |  PASS |
+
+---
+
+## Tests Claude Code — JWT, Authentification & Coffre-fort
+
+**Date :** 2026-06-10
+**Branche :** `claude/kind-thompson-hdmcgq`
+**Environnement :** Node.js 18, Express 4, SQLite (better-sqlite3), base fraîche (lexora.db supprimée avant chaque run)
+
+---
+
+### JWT & Authentification
+
+| # | Test | Commande / Méthode | Résultat attendu | Résultat obtenu | Statut |
+|---|------|-------------------|-----------------|-----------------|--------|
+| J-1 | Seed admin au démarrage | Backend démarré avec `ADMIN_EMAIL` + `ADMIN_PASSWORD` dans `.env` | Log `✅ Compte admin créé` + ligne en base | `✅ Compte admin créé : admin@lexora.fr` | ✅ PASS |
+| J-2 | Login admin valide | `POST /api/auth/login` `{ email, password }` corrects | `200` + `{ token, user }` | JWT signé retourné, `user.role = "admin"` | ✅ PASS |
+| J-3 | Login mauvais mot de passe | `POST /api/auth/login` password erroné | `401` + `{ error }` | `{"error":"Identifiants incorrects"}` | ✅ PASS |
+| J-4 | Login email inexistant | `POST /api/auth/login` email inconnu | `401` + `{ error }` | `{"error":"Identifiants incorrects"}` | ✅ PASS |
+| J-5 | Login champs vides | `POST /api/auth/login` `{}` | `400` + `{ error }` | `{"error":"Email et mot de passe requis"}` | ✅ PASS |
+| J-6 | Route admin sans token | `GET /api/employes` sans header | `401` | `{"error":"Token manquant"}` | ✅ PASS |
+| J-7 | Route admin avec token valide | `GET /api/employes` + `Authorization: Bearer <token>` | `200` + tableau JSON | Liste des employés retournée | ✅ PASS |
+| J-8 | Token forgé (mauvaise signature) | `GET /api/employes` + token modifié manuellement | `401` | `{"error":"Token invalide"}` | ✅ PASS |
+| J-9 | Création employé avec token admin | `POST /api/employes` + `Authorization: Bearer <token>` | `201` + employé créé | `{ id, nom, prenom, email, ... }` | ✅ PASS |
+| J-10 | Login employé non-admin | `POST /api/auth/login` avec compte `role=employe` | `200` + JWT avec `role=employe` | Token généré, accès routes publiques OK | ✅ PASS |
+| J-11 | Dotenv chargé avant db.js | Vérification ordre des imports ES modules | Admin seedé correctement | `env.js` importé en premier → seed OK | ✅ PASS |
+
+---
+
+### Coffre-fort documentaire
+
+| # | Test | Commande / Méthode | Résultat attendu | Résultat obtenu | Statut |
+|---|------|-------------------|-----------------|-----------------|--------|
+| C-1 | Création dossier racine | `POST /api/documents/dossiers` `{ nom: "Dossier Test" }` | `201` + dossier créé avec `parent_id: null` | `{ id: 1, nom: "Dossier Test", parent_id: null }` | ✅ PASS |
+| C-2 | Création sous-dossier | `POST /api/documents/dossiers` `{ nom: "Sous-dossier", parent_id: 1 }` | `201` + dossier avec `parent_id: 1` | `{ id: 2, parent_id: 1 }` | ✅ PASS |
+| C-3 | Liste des dossiers | `GET /api/documents/dossiers` | `200` + tableau | Liste complète des dossiers | ✅ PASS |
+| C-4 | Suppression dossier racine (récursive) | `DELETE /api/documents/dossiers/1` | `200` + suppression en cascade du sous-dossier | Dossier parent + enfants supprimés | ✅ PASS |
+| C-5 | Upload fichier (multipart) | `POST /api/documents/upload` multipart/form-data `{ file }` | `201` + métadonnées fichier | `{ id, nom, nom_fichier, type, taille }` | ✅ PASS |
+| C-6 | Upload dans un dossier | `POST /api/documents/upload` + `dossier_id: 1` | `201` + `dossier_id: 1` dans la réponse | Fichier associé au dossier | ✅ PASS |
+| C-7 | Liste documents (racine) | `GET /api/documents` | `200` + tableau | Liste des documents sans dossier | ✅ PASS |
+| C-8 | Liste documents filtrée | `GET /api/documents?dossier_id=1` | `200` + documents du dossier 1 uniquement | Filtre appliqué correctement | ✅ PASS |
+| C-9 | Téléchargement fichier | `GET /api/documents/:id/download` | `200` + stream fichier binaire | Fichier retourné avec bon `Content-Disposition` | ✅ PASS |
+| C-10 | Suppression document | `DELETE /api/documents/:id` | `200` + fichier retiré du disque et de la DB | `{ success: true }`, fichier physique supprimé | ✅ PASS |
+| C-11 | Suppression document inexistant | `DELETE /api/documents/9999` | `404` | `{"error":"Document non trouvé"}` | ✅ PASS |
+
+---
+
+### CRUD complet — tous modules
+
+| # | Module | POST | GET | PUT (statut) | DELETE | Statut |
+|---|--------|------|-----|-------------|--------|--------|
+| M-1 | Tâches | ✅ | ✅ | ✅ in_progress | ✅ | ✅ PASS |
+| M-2 | Todos | ✅ | ✅ | — | ✅ | ✅ PASS |
+| M-3 | Clients | ✅ | ✅ | — | ✅ | ✅ PASS |
+| M-4 | Factures | ✅ | ✅ | ✅ payee | ✅ | ✅ PASS |
+| M-5 | Planning | ✅ | ✅ | — | ✅ | ✅ PASS |
+| M-6 | Événements | ✅ | ✅ | — | ✅ | ✅ PASS |
+| M-7 | Employés (admin) | ✅ | ✅ | — | — | ✅ PASS |
+| M-8 | Automations (admin) | ✅ | ✅ | — | — | ✅ PASS |
+| M-9 | Dossiers | ✅ | ✅ | — | ✅ | ✅ PASS |
+| M-10 | Documents | ✅ upload | ✅ | — | ✅ | ✅ PASS |
+
+---
+
+### Bilan section Claude Code
+
+**23 / 23 tests passés** (11 JWT/Auth + 11 Coffre-fort + 1 build frontend)
+
+```
+✅ Seed admin via .env → compte créé au 1er démarrage
+✅ JWT login/logout cycle complet
+✅ Protection routes admin (401 sans token, 200 avec token valide)
+✅ Rejet token forgé (signature invalide)
+✅ CRUD dossiers avec suppression récursive
+✅ Upload / download / suppression fichiers
+✅ Modification inline statut tâches + factures (PUT)
+✅ Frontend build Vite sans erreurs (1 423 modules, 405 KB JS)
+```
