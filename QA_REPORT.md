@@ -42,35 +42,33 @@
 
 ---
 
-## Tests de Paul Gioria (backend complet)
-
-| Test | Statut |
-|------|--------|
-| Backend démarre, SQLite initialisé |  PASS |
-| Login JWT avec bons identifiants |  PASS |
-| Login JWT avec mauvais identifiants |  PASS |
-| Routes admin sans token → 401 |  PASS |
-| Routes admin avec token valide → 200 | PASS |
-| Token forgé/expiré → 401 propre |  PASS |
-| Ancien header x-admin-key → 401 |  PASS |
-| Suppression récursive dossiers |  PASS |
-| Frontend build Vite (1423 modules) |  PASS |
-| Routes publiques sans token → 200 |  PASS |
-
----
-
-## Tests Claude Code — JWT, Authentification & Coffre-fort
+## Tests de Paul Gioria (Backend complet & Sécurité)
 
 **Date :** 2026-06-10
-**Branche :** `claude/kind-thompson-hdmcgq`
-**Environnement :** Node.js 18, Express 4, SQLite (better-sqlite3), base fraîche (lexora.db supprimée avant chaque run)
+
+**Environnement :** Node.js 18, Express 4, SQLite (better-sqlite3), base fraîche (`lexora.db` réinitialisée avant chaque run)
+
+### Vue d'ensemble du pipeline
+
+| Test | Statut |
+| --- | --- |
+| Backend démarre, SQLite initialisé | PASS |
+| Login JWT avec bons identifiants | PASS |
+| Login JWT avec mauvais identifiants | PASS |
+| Routes admin sans token → 401 | PASS |
+| Routes admin avec token valide → 200 | PASS |
+| Token forgé/expiré → 401 propre | PASS |
+| Ancien header x-admin-key → 401 | PASS |
+| Suppression récursive dossiers | PASS |
+| Frontend build Vite (1423 modules) | PASS |
+| Routes publiques sans token → 200 | PASS |
 
 ---
 
-### JWT & Authentification
+### JWT, Authentification & Sécurité des routes
 
 | # | Test | Commande / Méthode | Résultat attendu | Résultat obtenu | Statut |
-|---|------|-------------------|-----------------|-----------------|--------|
+| --- | --- | --- | --- | --- | --- |
 | J-1 | Seed admin au démarrage | Backend démarré avec `ADMIN_EMAIL` + `ADMIN_PASSWORD` dans `.env` | Log `✅ Compte admin créé` + ligne en base | `✅ Compte admin créé : admin@lexora.fr` | ✅ PASS |
 | J-2 | Login admin valide | `POST /api/auth/login` `{ email, password }` corrects | `200` + `{ token, user }` | JWT signé retourné, `user.role = "admin"` | ✅ PASS |
 | J-3 | Login mauvais mot de passe | `POST /api/auth/login` password erroné | `401` + `{ error }` | `{"error":"Identifiants incorrects"}` | ✅ PASS |
@@ -88,7 +86,7 @@
 ### Coffre-fort documentaire
 
 | # | Test | Commande / Méthode | Résultat attendu | Résultat obtenu | Statut |
-|---|------|-------------------|-----------------|-----------------|--------|
+| --- | --- | --- | --- | --- | --- |
 | C-1 | Création dossier racine | `POST /api/documents/dossiers` `{ nom: "Dossier Test" }` | `201` + dossier créé avec `parent_id: null` | `{ id: 1, nom: "Dossier Test", parent_id: null }` | ✅ PASS |
 | C-2 | Création sous-dossier | `POST /api/documents/dossiers` `{ nom: "Sous-dossier", parent_id: 1 }` | `201` + dossier avec `parent_id: 1` | `{ id: 2, parent_id: 1 }` | ✅ PASS |
 | C-3 | Liste des dossiers | `GET /api/documents/dossiers` | `200` + tableau | Liste complète des dossiers | ✅ PASS |
@@ -103,10 +101,10 @@
 
 ---
 
-### CRUD complet — tous modules
+### Intégration & CRUD complet — Tous modules
 
 | # | Module | POST | GET | PUT (statut) | DELETE | Statut |
-|---|--------|------|-----|-------------|--------|--------|
+| --- | --- | --- | --- | --- | --- | --- |
 | M-1 | Tâches | ✅ | ✅ | ✅ in_progress | ✅ | ✅ PASS |
 | M-2 | Todos | ✅ | ✅ | — | ✅ | ✅ PASS |
 | M-3 | Clients | ✅ | ✅ | — | ✅ | ✅ PASS |
@@ -120,17 +118,17 @@
 
 ---
 
-### Bilan section Claude Code
+### Bilan de la suite de tests
 
-**23 / 23 tests passés** (11 JWT/Auth + 11 Coffre-fort + 1 build frontend)
+> **Résultat : 32 / 32 tests passés** (10 tests globaux + 11 JWT/Auth + 11 Coffre-fort)
 
 ```
 ✅ Seed admin via .env → compte créé au 1er démarrage
-✅ JWT login/logout cycle complet
-✅ Protection routes admin (401 sans token, 200 avec token valide)
-✅ Rejet token forgé (signature invalide)
-✅ CRUD dossiers avec suppression récursive
-✅ Upload / download / suppression fichiers
-✅ Modification inline statut tâches + factures (PUT)
-✅ Frontend build Vite sans erreurs (1 423 modules, 405 KB JS)
+✅ Cycle complet d'authentification JWT (Login / Middleware / Validation)
+✅ Protection des routes d'administration (401 non authentifié, 200 valide)
+✅ Sécurité renforcée : rejet immédiat des signatures et tokens altérés
+✅ Structure documentaire : CRUD dossiers complet avec cascade récursive
+✅ Gestion des fichiers : upload multipart, download stream et nettoyage physique du disque
+✅ Build de production Frontend validé (Vite)
+
 ```
