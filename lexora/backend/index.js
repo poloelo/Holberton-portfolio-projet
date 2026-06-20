@@ -2,11 +2,11 @@
  * index.js — Point d'entrée du serveur Express (Lexora Backend)
  *
  * Ce fichier :
- *  1. Charge la configuration depuis .env
+ *  1. Charge la configuration depuis .env (ou .env.test si NODE_ENV=test)
  *  2. Crée l'application Express
  *  3. Enregistre les middlewares globaux (CORS, helmet, rate-limit, JSON)
  *  4. Monte chaque module de routes sous son préfixe /api/...
- *  5. Lance le serveur sur le port configuré
+ *  5. Lance le serveur sur le port configuré (sauf en mode test)
  *
  * Architecture : un fichier de route = un domaine métier.
  * La base de données est initialisée au premier import de db.js.
@@ -35,17 +35,16 @@ import authRouter        from './routes/auth.js';
 
 // ── Configuration ─────────────────────────────────────────────
 const __dirname = dirname(fileURLToPath(import.meta.url));
-dotenv.config({ path: join(__dirname, '../.env') });
+const envFile = process.env.NODE_ENV === 'test' ? '../.env.test' : '../.env';
+dotenv.config({ path: join(__dirname, envFile) });
 
 const app  = express();
 const PORT = process.env.PORT || 3000;
 
 // ── Sécurité : Headers HTTP ───────────────────────────────────
-// helmet() ajoute ~14 headers de sécurité (CSP, HSTS, X-Frame-Options...)
 app.use(helmet());
 
 // ── Sécurité : CORS strict ────────────────────────────────────
-// Seules les origines listées dans ALLOWED_ORIGINS peuvent appeler l'API.
 const ALLOWED_ORIGINS = (process.env.ALLOWED_ORIGINS || 'http://localhost:5173')
   .split(',')
   .map(o => o.trim());
@@ -64,8 +63,6 @@ app.use(cors({
 }));
 
 // ── Sécurité : Rate Limiting ──────────────────────────────────
-// Limite chaque IP à 100 requêtes par fenêtre de 15 minutes.
-// Protège contre le brute-force et les attaques DDoS basiques.
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 100,
@@ -91,12 +88,19 @@ app.use('/api/planning',    planningRouter);
 app.use('/api/assistant',   assistantRouter);
 app.use('/api/todos',       todosRouter);
 app.use('/api/clients',     clientsRouter);
-app.use('/api/employes',    employesRouter);     // Protégé par verifyJWT
+app.use('/api/employes',    employesRouter);     // Protégé par requireAdmin
 app.use('/api/automations', automationsRouter);  // Protégé par verifyJWT
 app.use('/api/evenements',  evenementsRouter);
 app.use('/api/documents',   documentsRouter);
 
 // ── Démarrage du serveur ──────────────────────────────────────
-app.listen(PORT, () => {
-  console.log(` Lexora backend running on port ${PORT}`);
-});
+// On ne lance le serveur que si ce fichier est exécuté directement
+// (node index.js / npm start). Quand il est importé par les tests
+// (supertest), on veut juste l'app Express, sans port ouvert.
+if (process.env.NODE_ENV !== 'test') {
+  app.listen(PORT, () => {
+    console.log(`Lexora backend running on port ${PORT}`);
+  });
+}
+
+export default app;

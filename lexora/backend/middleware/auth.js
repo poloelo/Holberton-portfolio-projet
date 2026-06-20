@@ -13,3 +13,12 @@ export function verifyJWT(req, res, next) {
     res.status(401).json({ error: 'Token invalide ou expiré' });
   }
 }
+
+export function requireAdmin(req, res, next) {
+  verifyJWT(req, res, () => {
+    if (req.admin?.role !== 'admin') {
+      return res.status(403).json({ error: 'Accès réservé aux administrateurs' });
+    }
+    next();
+  });
+}

@@ -1,11 +1,11 @@
 import express from 'express';
 import bcrypt from 'bcryptjs';
 import db from '../models/db.js';
-import { verifyJWT } from '../middleware/auth.js';
+import { requireAdmin } from '../middleware/auth.js';
 
 const router = express.Router();
 
-const isAdmin = verifyJWT;
+const isAdmin = requireAdmin;
 
 // GET — Tous les employés (Admin) — password_hash exclu de la réponse
 router.get('/', isAdmin, (req, res) => {
