@@ -66,9 +66,40 @@ chaque modification du code (régression continue).
 
 ---
 
+## Tests automatisés backend (Vitest + supertest)
+
+Suite de tests d'intégration sur les routes `/api/employes`, exécutée avec
+Vitest + supertest contre l'app Express réelle (sans démarrer de serveur).
+Ces tests vérifient le contrôle d'accès par rôle, suite à la correction d'une
+faille de sécurité : `isAdmin` était auparavant un simple alias vers
+`verifyJWT` (vérifie un token valide, mais pas le rôle), ce qui permettait à
+n'importe quel employé authentifié de lire, modifier ou supprimer des
+employés — y compris de s'auto-promouvoir admin via `PUT /:id`.
+
+**Correction :** ajout d'un middleware `requireAdmin` (vérifie
+`req.admin.role === 'admin'`), utilisé à la place de `verifyJWT` dans
+`routes/employes.js`.
+
+**Commande :** `npm test` (dans `lexora/backend`)
+**Résultat :** 1 fichier de test, 6/6 tests PASS, durée ~0.9s
+
+### Protection par rôle — `tests/employes.test.js` (6 tests)
+
+| # | Test | Méthode | Résultat attendu | Statut |
+|---|------|---------|-------------------|--------|
+| 1 | Requête sans token | `GET /api/employes` | 401 | PASS |
+| 2 | Employé non-admin | `GET /api/employes` | 403 | PASS |
+| 3 | Admin | `GET /api/employes` | 200, liste retournée | PASS |
+| 4 | Auto-promotion bloquée | `PUT /api/employes/:id` (non-admin, `role: 'admin'`) | 403, rôle inchangé en base | PASS |
+| 5 | Suppression bloquée | `DELETE /api/employes/:id` (non-admin) | 403, employé toujours présent | PASS |
+| 6 | Suppression admin | `DELETE /api/employes/:id` (admin) | 200, employé supprimé | PASS |
+
+---
+
 ## Verdict
 
-**PASS — MVP fonctionnel, sécurité validée, authentification frontend testée automatiquement.**
+**PASS — MVP fonctionnel, sécurité validée, authentification frontend et
+contrôle d'accès backend testés automatiquement.**
 
 ### Points validés
 - Docker : build multi-stage, volumes persistants, health check
@@ -78,6 +109,9 @@ chaque modification du code (régression continue).
 - Auth JWT : routes admin protégées, erreurs propres
 - Frontend : gardes de route (`PrivateRoute`, `AdminRoute`) et formulaire de
   connexion couverts par 14 tests automatisés, exécutables en continu
+- Backend : contrôle d'accès par rôle sur `/api/employes` couvert par 6 tests
+  automatisés (Vitest + supertest), suite à la correction d'une faille
+  d'élévation de privilèges
 
 ---
 
