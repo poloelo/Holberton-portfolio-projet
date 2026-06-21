@@ -35,11 +35,11 @@ import authRouter        from './routes/auth.js';
 
 // ── Configuration ─────────────────────────────────────────────
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const envFile = process.env.NODE_ENV === 'test' ? '../.env.test' : '../.env';
+const envFile = process.env.NODE_ENV === 'test' ? './.env.test' : '../.env';
 dotenv.config({ path: join(__dirname, envFile) });
-
-const app  = express();
+ 
 const PORT = process.env.PORT || 3000;
+const app  = express();
 
 // ── Sécurité : Headers HTTP ───────────────────────────────────
 app.use(helmet());
