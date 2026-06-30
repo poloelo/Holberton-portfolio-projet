@@ -1,6 +1,6 @@
 # QA Report — Lexora MVP
 
-**Date :** 2026-07-17 
+**Date :** 2026-06-30 
 **Testeur :** Keish (sam99-web)  
 **Branche :** keish/docker-security  
 
@@ -11,7 +11,7 @@
 - Docker Desktop v29.4.3
 - Windows 11 / WSL2
 - curl pour les tests API
-- Vitest v4.1.9 + Testing Library (tests automatisés frontend)
+- Vitest v2.1.9 + Testing Library (tests automatisés frontend)
 
 ---
 

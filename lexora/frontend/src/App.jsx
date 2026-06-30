@@ -13,12 +13,13 @@ import MonEspace       from './pages/MonEspace.jsx';
 import Login           from './pages/Login.jsx';
 
 // ── Gardes de route ───────────────────────────────────────
-function PrivateRoute({ children }) {
+// Exportées pour être testées unitairement (App.test.jsx).
+export function PrivateRoute({ children }) {
   const { isAuthenticated } = useAuth();
   return isAuthenticated ? children : <Navigate to="/login" replace />;
 }
 
-function AdminRoute({ children }) {
+export function AdminRoute({ children }) {
   const { isAuthenticated, user } = useAuth();
   if (!isAuthenticated) return <Navigate to="/login" replace />;
   if (user?.role !== 'admin') return <Navigate to="/mon-espace" replace />;

@@ -11,4 +11,10 @@ export default defineConfig({
       },
     },
   },
+  // Configuration des tests (Vitest + Testing Library)
+  test: {
+    environment: 'jsdom',
+    globals: true,
+    setupFiles: './src/setupTests.js',
+  },
 });

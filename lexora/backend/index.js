@@ -17,6 +17,7 @@ import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
+import { fileURLToPath } from 'url';
 
 // ── Import des modules de routes ──────────────────────────────
 import tachesRouter      from './routes/taches.js';
@@ -91,6 +92,15 @@ app.use('/api/evenements',  evenementsRouter);
 app.use('/api/documents',   documentsRouter);
 
 // ── Démarrage du serveur ──────────────────────────────────────
-app.listen(PORT, () => {
-  console.log(` Lexora backend running on port ${PORT}`);
-});
+// On ne démarre le serveur que si ce fichier est exécuté directement
+// (node index.js). Lors des tests, l'app est importée puis passée à
+// supertest sans ouvrir de port réseau.
+const isMain = process.argv[1] === fileURLToPath(import.meta.url);
+if (isMain) {
+  app.listen(PORT, () => {
+    console.log(` Lexora backend running on port ${PORT}`);
+  });
+}
+
+// Export pour les tests d'intégration (supertest).
+export default app;

@@ -1,10 +1,11 @@
 import express from 'express';
 import db from '../models/db.js';
-import { verifyJWT } from '../middleware/auth.js';
+import { requireAdmin } from '../middleware/auth.js';
 
 const router = express.Router();
 
-const isAdmin = verifyJWT;
+// Routes d'automatisation réservées aux admins (token + rôle vérifiés).
+const isAdmin = requireAdmin;
 
 // GET — Toutes les automations
 router.get('/', isAdmin, (req, res) => {
